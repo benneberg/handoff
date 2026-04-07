@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, Download, Trash2, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Hexagon, Diamond, Trash2, X, Loader2, Check, Send, RotateCcw, RotateCw, Eraser } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,14 +11,20 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { generateCardMarkdown } from '@/lib/markdown-utils';
+import { useEditorHistory } from '@/hooks/use-editor-history';
+import { MarkdownPreviewModal } from '@/components/modals/MarkdownPreviewModal';
+import { TransmitModal } from '@/components/modals/TransmitModal';
 import type { SystemCard, CardTemplate } from '@shared/types';
+import { cn } from '@/lib/utils';
 export function EditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
   const isNew = !id;
-  const [formData, setFormData] = useState<Partial<SystemCard>>({
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [transmitOpen, setTransmitOpen] = useState(false);
+  const { state: formData, push: setFormData, undo, redo, reset, canUndo, canRedo } = useEditorHistory({
     projectName: '',
     oneLiner: '',
     targetUser: '',
@@ -33,154 +39,175 @@ export function EditorPage() {
     whatDoesntWork: [],
     handoffReadiness: 5,
   });
-  const { data: existingCard } = useQuery({
+  const { data: existingCard, isLoading: isCardLoading } = useQuery({
     queryKey: ['card', id],
     queryFn: () => api<SystemCard>(`/api/cards/${id}`),
     enabled: !!id,
   });
   useEffect(() => {
     if (existingCard) {
-      setFormData(existingCard);
+      reset(existingCard);
     } else if (isNew && location.state?.template) {
       const template = location.state.template as CardTemplate;
-      setFormData(prev => ({ ...prev, ...template.preset }));
+      reset({ ...formData, ...template.preset });
     }
   }, [existingCard, isNew, location.state]);
   const saveMutation = useMutation({
     mutationFn: (data: Partial<SystemCard>) => {
+      const payload = { ...data, updatedAt: Date.now() };
       return isNew
-        ? api<SystemCard>('/api/cards', { method: 'POST', body: JSON.stringify(data) })
-        : api<SystemCard>(`/api/cards/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+        ? api<SystemCard>('/api/cards', { method: 'POST', body: JSON.stringify(payload) })
+        : api<SystemCard>(`/api/cards/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards'] });
-      toast.success(isNew ? 'Card created' : 'Card updated');
+      toast.success(isNew ? 'Architecture Initialized' : 'System State Updated');
       navigate('/');
     },
-    onError: (err: Error) => toast.error(`Error saving: ${err.message}`),
+    onError: (err: Error) => toast.error(`Contention Detected: ${err.message}`),
   });
   const deleteMutation = useMutation({
     mutationFn: () => api(`/api/cards/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cards'] });
-      toast.success('Card deleted');
+      toast.success('System Purged');
       navigate('/');
     }
   });
   const handleChange = (field: keyof SystemCard, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData({ ...formData, [field]: value });
   };
   const handleListAdd = (field: 'whatWorks' | 'whatDoesntWork', value: string) => {
     if (!value.trim()) return;
-    setFormData(prev => ({ ...prev, [field]: [...(prev[field] || []), value.trim()] }));
+    setFormData({ ...formData, [field]: [...(formData[field] || []), value.trim()] });
   };
   const handleListRemove = (field: 'whatWorks' | 'whatDoesntWork', index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: (prev[field] || []).filter((_, i) => i !== index)
-    }));
+    setFormData({
+      ...formData,
+      [field]: (formData[field] || []).filter((_, i) => i !== index)
+    });
   };
-  const handleExportMarkdown = () => {
-    const md = generateCardMarkdown(formData as SystemCard);
-    const blob = new Blob([md], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${formData.projectName || 'system-card'}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleClear = () => {
+    if (confirm('Reset editor to initial state?')) {
+      reset({
+        projectName: '',
+        oneLiner: '',
+        targetUser: '',
+        problem: '',
+        solution: '',
+        coreWorkflow: '',
+        mvpBuildOrder: '',
+        differentiation: '',
+        monetization: '',
+        nextExpansion: '',
+        whatWorks: [],
+        whatDoesntWork: [],
+        handoffReadiness: 5,
+      });
+    }
   };
+  if (id && isCardLoading) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 bg-background selection:bg-primary/10">
       <div className="py-8 md:py-10 lg:py-12 space-y-12">
-        <header className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full">
-            <ArrowLeft className="size-4 mr-2" />
-            Dashboard
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportMarkdown} disabled={!formData.projectName}>
-              <Download className="size-4 mr-2" />
-              Markdown
+        <header className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => navigate('/')} className="rounded-full">
+              <ArrowLeft className="size-4 mr-2" />
+              Exit
             </Button>
-            <Button onClick={() => saveMutation.mutate(formData)} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? (
-                <Loader2 className="size-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="size-4 mr-2" />
-              )}
-              {isNew ? 'Create Card' : 'Save Changes'}
+            <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-full border">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" disabled={!canUndo} onClick={undo}>
+                <RotateCcw className="size-3" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" disabled={!canRedo} onClick={redo}>
+                <RotateCw className="size-3" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={handleClear}>
+                <Eraser className="size-3" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isNew && (
+              <Button variant="outline" size="sm" className="rounded-full" onClick={() => setTransmitOpen(true)}>
+                <Send className="size-4 mr-2" /> Transmit
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="rounded-full" onClick={() => setPreviewOpen(true)} disabled={!formData.projectName}>
+              <Diamond className="size-4 mr-2" /> Preview
+            </Button>
+            <Button onClick={() => saveMutation.mutate(formData)} disabled={saveMutation.isPending || !formData.projectName} className="rounded-full px-6">
+              {saveMutation.isPending ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Hexagon className="size-4 mr-2" />}
+              {isNew ? 'Initialize' : 'Save'}
             </Button>
           </div>
         </header>
-        <main className="space-y-16">
-          <section className="space-y-8">
+        <main className="space-y-20 pb-20">
+          <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold">Concept Definition</h2>
-              <p className="text-sm text-muted-foreground">The core identity and value proposition of the system.</p>
+              <h2 className="text-2xl font-display font-bold tracking-tight">Concept Definition</h2>
+              <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Identity & Proposition</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <Label htmlFor="projectName">Project Name</Label>
+                <Label className="text-xs uppercase font-mono text-muted-foreground">System Name</Label>
                 <Input
-                  id="projectName"
+                  className="bg-secondary/30 border-none h-12 text-lg focus-visible:ring-primary"
                   placeholder="e.g. Graceful Degradation"
                   value={formData.projectName}
                   onChange={e => handleChange('projectName', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="targetUser">Target User</Label>
+                <Label className="text-xs uppercase font-mono text-muted-foreground">Target Subject</Label>
                 <Input
-                  id="targetUser"
-                  placeholder="e.g. Exhausted Overachievers"
+                  className="bg-secondary/30 border-none h-12 text-lg focus-visible:ring-primary"
+                  placeholder="e.g. Overachievers"
                   value={formData.targetUser}
                   onChange={e => handleChange('targetUser', e.target.value)}
                 />
               </div>
               <div className="col-span-full space-y-2">
-                <Label htmlFor="oneLiner">One Liner</Label>
+                <Label className="text-xs uppercase font-mono text-muted-foreground">Architectural One-Liner</Label>
                 <Input
-                  id="oneLiner"
-                  placeholder="A short punchy description..."
+                  className="bg-secondary/30 border-none h-12 italic focus-visible:ring-primary"
+                  placeholder="The core logic of this system in one sentence..."
                   value={formData.oneLiner}
                   onChange={e => handleChange('oneLiner', e.target.value)}
                 />
               </div>
             </div>
           </section>
-          <Separator />
           <section className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold">Architecture</h2>
-              <p className="text-sm text-muted-foreground">How the system logic addresses the problem space.</p>
+              <h2 className="text-2xl font-display font-bold tracking-tight">Logic Engine</h2>
+              <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Architecture & Flow</p>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div className="space-y-2">
-                <Label htmlFor="problem">The Problem (Human Condition)</Label>
+                <Label className="text-xs uppercase font-mono text-muted-foreground">The Human Condition (The Problem)</Label>
                 <Textarea
-                  id="problem"
-                  className="min-h-[100px]"
-                  placeholder="What human struggle are we modeling?"
+                  className="min-h-[120px] bg-secondary/30 border-none text-lg resize-none"
+                  placeholder="Describe the human struggle..."
                   value={formData.problem}
                   onChange={e => handleChange('problem', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="solution">The Solution (System Architecture)</Label>
+                <Label className="text-xs uppercase font-mono text-muted-foreground">The System Architecture (The Solution)</Label>
                 <Textarea
-                  id="solution"
-                  className="min-h-[100px]"
-                  placeholder="How does technical architecture solve it?"
+                  className="min-h-[120px] bg-secondary/30 border-none text-lg resize-none"
+                  placeholder="How does logic solve the problem?"
                   value={formData.solution}
                   onChange={e => handleChange('solution', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="coreWorkflow">Core Workflow</Label>
+                <Label className="text-xs uppercase font-mono text-muted-foreground">Core Workflow Logic</Label>
                 <Textarea
-                  id="coreWorkflow"
-                  placeholder="Step-by-step logic flow..."
+                  className="bg-secondary/30 border-none font-mono text-sm min-h-[100px]"
+                  placeholder="Input -> Reasoning -> Action -> Loop"
                   value={formData.coreWorkflow}
                   onChange={e => handleChange('coreWorkflow', e.target.value)}
                 />
@@ -189,57 +216,40 @@ export function EditorPage() {
           </section>
           <section className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold">Strategy & Growth</h2>
-              <p className="text-sm text-muted-foreground">The edge and future roadmap of this architectural concept.</p>
+              <h2 className="text-2xl font-display font-bold tracking-tight">Strategic Context</h2>
+              <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Growth & Sustainability</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <Label htmlFor="differentiation">Differentiation</Label>
+                <Label className="text-xs uppercase font-mono text-muted-foreground">Differentiation</Label>
                 <Textarea
-                  id="differentiation"
-                  placeholder="What makes this system unique compared to others?"
+                  className="bg-secondary/30 border-none h-32 resize-none"
+                  placeholder="What makes this logic unique?"
                   value={formData.differentiation}
                   onChange={e => handleChange('differentiation', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="monetization">Monetization / Sustainability</Label>
+                <Label className="text-xs uppercase font-mono text-muted-foreground">Value Capture</Label>
                 <Textarea
-                  id="monetization"
-                  placeholder="How does this system capture or maintain value?"
+                  className="bg-secondary/30 border-none h-32 resize-none"
+                  placeholder="How is this system sustained?"
                   value={formData.monetization}
                   onChange={e => handleChange('monetization', e.target.value)}
-                />
-              </div>
-              <div className="col-span-full space-y-2">
-                <Label htmlFor="nextExpansion">Next Expansion</Label>
-                <Textarea
-                  id="nextExpansion"
-                  placeholder="Where does the system go next?"
-                  value={formData.nextExpansion}
-                  onChange={e => handleChange('nextExpansion', e.target.value)}
                 />
               </div>
             </div>
           </section>
           <section className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold">Execution & Readiness</h2>
+              <h2 className="text-2xl font-display font-bold tracking-tight">Execution State</h2>
+              <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Readiness & Validation</p>
             </div>
-            <div className="space-y-10">
-              <div className="space-y-2">
-                <Label htmlFor="mvpBuildOrder">MVP Build Order</Label>
-                <Textarea
-                  id="mvpBuildOrder"
-                  placeholder="Step 1, Step 2, Step 3..."
-                  value={formData.mvpBuildOrder}
-                  onChange={e => handleChange('mvpBuildOrder', e.target.value)}
-                />
-              </div>
+            <div className="space-y-12">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <Label>Handoff Readiness</Label>
-                  <span className="font-mono text-sm">{formData.handoffReadiness || 1}/10</span>
+                  <Label className="text-xs uppercase font-mono text-muted-foreground">Readiness Score</Label>
+                  <span className="font-mono text-sm font-bold">{formData.handoffReadiness || 1}/10</span>
                 </div>
                 <Slider
                   value={[formData.handoffReadiness || 1]}
@@ -249,18 +259,23 @@ export function EditorPage() {
                   onValueChange={([val]) => handleChange('handoffReadiness', val)}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-4">
-                  <Label>What Works</Label>
-                  <Input id="works-add" placeholder="Press Enter to add..." onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      handleListAdd('whatWorks', e.currentTarget.value);
-                      e.currentTarget.value = '';
-                    }
-                  }} />
+                  <Label className="text-xs uppercase font-mono text-green-600 dark:text-green-400">✓ What Works Well</Label>
+                  <Input 
+                    className="bg-secondary/30 border-none" 
+                    placeholder="Add operational success..." 
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        handleListAdd('whatWorks', e.currentTarget.value);
+                        e.currentTarget.value = '';
+                      }
+                    }} 
+                  />
                   <div className="flex flex-wrap gap-2">
                     {formData.whatWorks?.map((item, i) => (
-                      <div key={i} className="flex items-center gap-1 bg-secondary px-2 py-1 rounded-md text-sm">
+                      <div key={i} className="flex items-center gap-2 bg-green-500/10 text-green-700 dark:text-green-300 px-3 py-1.5 rounded-full text-xs font-medium border border-green-500/20">
+                        <Check className="size-3" />
                         {item}
                         <X className="size-3 cursor-pointer hover:text-destructive" onClick={() => handleListRemove('whatWorks', i)} />
                       </div>
@@ -268,18 +283,23 @@ export function EditorPage() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <Label>What Doesn't Work</Label>
-                  <Input id="fails-add" placeholder="Press Enter to add..." onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      handleListAdd('whatDoesntWork', e.currentTarget.value);
-                      e.currentTarget.value = '';
-                    }
-                  }} />
+                  <Label className="text-xs uppercase font-mono text-red-600 dark:text-red-400">✗ System Failures</Label>
+                  <Input 
+                    className="bg-secondary/30 border-none" 
+                    placeholder="Add known bugs/limitations..." 
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        handleListAdd('whatDoesntWork', e.currentTarget.value);
+                        e.currentTarget.value = '';
+                      }
+                    }} 
+                  />
                   <div className="flex flex-wrap gap-2">
                     {formData.whatDoesntWork?.map((item, i) => (
-                      <div key={i} className="flex items-center gap-1 bg-secondary px-2 py-1 rounded-md text-sm">
+                      <div key={i} className="flex items-center gap-2 bg-red-500/10 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-full text-xs font-medium border border-red-500/20">
+                        <X className="size-3" />
                         {item}
-                        <X className="size-3 cursor-pointer hover:text-destructive" onClick={() => handleListRemove('whatDoesntWork', i)} />
+                        <X className="size-3 cursor-pointer hover:text-foreground" onClick={() => handleListRemove('whatDoesntWork', i)} />
                       </div>
                     ))}
                   </div>
@@ -288,23 +308,35 @@ export function EditorPage() {
             </div>
           </section>
           {!isNew && (
-            <div className="pt-12 border-t border-destructive/20">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-destructive/5">
+            <div className="pt-20">
+              <div className="flex items-center justify-between p-6 rounded-2xl bg-destructive/5 border border-destructive/10">
                 <div className="space-y-1">
                   <h3 className="font-bold text-destructive">Danger Zone</h3>
-                  <p className="text-sm text-muted-foreground">This will permanently delete this system card.</p>
+                  <p className="text-sm text-muted-foreground">Irreversible system deletion.</p>
                 </div>
-                <Button variant="destructive" size="sm" onClick={() => {
-                  if (confirm('Are you sure you want to delete this card?')) deleteMutation.mutate();
+                <Button variant="destructive" size="sm" className="rounded-full" onClick={() => {
+                  if (confirm('Are you sure you want to delete this architecture?')) deleteMutation.mutate();
                 }}>
                   <Trash2 className="size-4 mr-2" />
-                  Delete Card
+                  Purge Card
                 </Button>
               </div>
             </div>
           )}
         </main>
       </div>
+      <MarkdownPreviewModal 
+        card={formData as SystemCard} 
+        open={previewOpen} 
+        onOpenChange={setPreviewOpen} 
+      />
+      {formData && !isNew && (
+        <TransmitModal 
+          card={formData as SystemCard} 
+          open={transmitOpen} 
+          onOpenChange={setTransmitOpen} 
+        />
+      )}
     </div>
   );
 }
