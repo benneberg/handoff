@@ -26,45 +26,46 @@ export function DeckPage() {
     return cards.map((_, i) => i);
   }, [cards, shuffledOrder]);
   const activeCard = useMemo(() => cards[deckOrder[currentIndex]], [cards, deckOrder, currentIndex]);
-  // Handle Initial ID Routing or deep links
+  // Handle Initial ID Routing or deep links (only once when cards load)
   useEffect(() => {
     if (id && cards.length > 0) {
       const cardIndex = cards.findIndex(c => c.id === id);
       if (cardIndex !== -1) {
-        const orderIndex = deckOrder.indexOf(cardIndex);
-        if (orderIndex !== -1 && orderIndex !== currentIndex) {
-          setCurrentIndex(orderIndex);
-        }
+        setCurrentIndex((currentIdx) => {
+          // Find position of target card in current deck order
+          const orderIndex = cards.map((_, i) => i).indexOf(cardIndex);
+          return orderIndex;
+        });
       }
     }
-  }, [id, cards, deckOrder]);
+  }, [id, cards]); // Only when cards or id change
   const toggleShuffle = useCallback(() => {
-    if (shuffledOrder) {
-      // Unshuffle: find current card's original index
-      const originalIndex = shuffledOrder[currentIndex];
-      setShuffledOrder(null);
-      setCurrentIndex(originalIndex);
-    } else {
-      // Shuffle: create new permutation but keep user on same card
-      const indices = cards.map((_, i) => i);
-      const currentOriginalIndex = deckOrder[currentIndex];
-      const newOrder = [...indices].sort(() => Math.random() - 0.5);
-      const newPosition = newOrder.indexOf(currentOriginalIndex);
-      setShuffledOrder(newOrder);
-      setCurrentIndex(newPosition);
-    }
-  }, [shuffledOrder, cards, deckOrder, currentIndex]);
+    setCurrentIndex((currentIdx) => {
+      if (shuffledOrder) {
+        // Unshuffle: find current card's original index
+        const originalIndex = shuffledOrder[currentIdx];
+        setShuffledOrder(null);
+        return originalIndex;
+      } else {
+        // Shuffle: create new permutation but keep user on same card
+        const currentOriginalIndex = deckOrder[currentIdx];
+        const newOrder = Array.from({length: cards.length}, (_, i) => i).sort(() => Math.random() - 0.5);
+        const newPosition = newOrder.indexOf(currentOriginalIndex);
+        setShuffledOrder(newOrder);
+        return newPosition;
+      }
+    });
+  }, [shuffledOrder, cards.length, deckOrder]);
   const paginate = useCallback((newDirection: number) => {
     setCurrentIndex((prev) => {
-      const currentDeckOrder = deckOrder;
       const nextIndex = prev + newDirection;
-      if (nextIndex >= 0 && nextIndex < currentDeckOrder.length) {
+      if (nextIndex >= 0 && nextIndex < deckOrder.length) {
         setDirection(newDirection);
         return nextIndex;
       }
       return prev;
     });
-  }, [deckOrder]);
+  }, [deckOrder.length]);
   useHotkeys('arrowright', () => paginate(1), [paginate]);
   useHotkeys('arrowleft', () => paginate(-1), [paginate]);
   useHotkeys('escape', () => navigate('/'));
