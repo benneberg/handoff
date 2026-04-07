@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ChevronLeft, ChevronRight, Shuffle, Binary, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Shuffle, Binary, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ParadoxViewer } from '@/components/ParadoxViewer';
 import { api } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 import type { SystemCard } from '@shared/types';
 import { useHotkeys } from 'react-hotkeys-hook';
 export function DeckPage() {
@@ -18,15 +19,17 @@ export function DeckPage() {
     queryKey: ['cards'],
     queryFn: () => api<{ items: SystemCard[] }>('/api/cards'),
   });
-  const cards = cardsData?.items ?? [];
+  const cards = useMemo(() => cardsData?.items ?? [], [cardsData?.items]);
   // Handle shuffling logic
   const deckOrder = useMemo(() => {
     const indices = cards.map((_, i) => i);
     if (isShuffled) {
+      // Use a simple seeded-like or stable sort if possible, 
+      // but for "Zen Mode" a fresh shuffle on toggle is expected.
       return [...indices].sort(() => Math.random() - 0.5);
     }
     return indices;
-  }, [cards.length, isShuffled]);
+  }, [cards, isShuffled]);
   // If a specific ID is provided, find its index in the current order
   useEffect(() => {
     if (id && cards.length > 0) {
@@ -37,14 +40,18 @@ export function DeckPage() {
       }
     }
   }, [id, cards, deckOrder]);
-  const paginate = (newDirection: number) => {
-    if (currentIndex + newDirection >= 0 && currentIndex + newDirection < deckOrder.length) {
-      setDirection(newDirection);
-      setCurrentIndex(currentIndex + newDirection);
-    }
-  };
-  useHotkeys('arrowright', () => paginate(1));
-  useHotkeys('arrowleft', () => paginate(-1));
+  const paginate = useCallback((newDirection: number) => {
+    setCurrentIndex((prev) => {
+      const nextIndex = prev + newDirection;
+      if (nextIndex >= 0 && nextIndex < deckOrder.length) {
+        setDirection(newDirection);
+        return nextIndex;
+      }
+      return prev;
+    });
+  }, [deckOrder.length]);
+  useHotkeys('arrowright', () => paginate(1), [paginate]);
+  useHotkeys('arrowleft', () => paginate(-1), [paginate]);
   useHotkeys('escape', () => navigate('/'));
   if (isLoading) {
     return (
@@ -77,7 +84,7 @@ export function DeckPage() {
           </Button>
           <div className="h-4 w-px bg-border/40" />
           <div className="flex flex-col">
-            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Logic Stream</span>
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest text-left">Logic Stream</span>
             <span className="text-sm font-bold tracking-tight">{currentIndex + 1} / {cards.length}</span>
           </div>
         </div>
@@ -85,7 +92,10 @@ export function DeckPage() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className={cn("rounded-full font-mono text-[10px] tracking-widest", isShuffled && "text-primary bg-primary/5")}
+            className={cn(
+              "rounded-full font-mono text-[10px] tracking-widest transition-colors", 
+              isShuffled && "text-primary bg-primary/10"
+            )}
             onClick={() => setIsShuffled(!isShuffled)}
           >
             <Shuffle className={cn("size-3 mr-2", isShuffled && "animate-pulse")} />
@@ -95,7 +105,7 @@ export function DeckPage() {
       </header>
       {/* Main Content Stage */}
       <main className="flex-1 flex items-center justify-center px-4 relative z-10">
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-4xl relative h-full flex items-center justify-center">
           <ParadoxViewer 
             card={activeCard} 
             direction={direction} 
@@ -152,7 +162,4 @@ export function DeckPage() {
       </footer>
     </div>
   );
-}
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }
