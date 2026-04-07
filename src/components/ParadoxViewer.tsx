@@ -1,10 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ParadoxCard } from '@shared/types';
-import { cn } from '@/lib/utils';
+import type { SystemCard } from '@shared/types';
 interface ParadoxViewerProps {
-  card: ParadoxCard;
+  card: SystemCard;
   direction: number;
 }
 const variants = {
@@ -28,7 +27,7 @@ const variants = {
 };
 export function ParadoxViewer({ card, direction }: ParadoxViewerProps) {
   return (
-    <div className="relative w-full max-w-2xl mx-auto perspective-1000 min-h-[450px] flex items-center justify-center">
+    <div className="relative w-full max-w-2xl mx-auto min-h-[450px] flex items-center justify-center">
       <AnimatePresence initial={false} custom={direction} mode="wait">
         <motion.div
           key={card.id}
@@ -48,30 +47,28 @@ export function ParadoxViewer({ card, direction }: ParadoxViewerProps) {
             <CardHeader className="pt-10 pb-4 text-center">
               <div className="text-2xs uppercase tracking-widest text-muted-foreground mb-2">System Architecture</div>
               <CardTitle className="text-3xl md:text-4xl font-display font-bold tracking-tight text-foreground">
-                {card.title}
+                {card.projectName}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-8 md:px-12 pb-12 space-y-8">
               <div className="space-y-2">
                 <p className="text-sm font-mono text-muted-foreground/70 uppercase">Logic</p>
                 <p className="text-lg text-foreground leading-relaxed text-pretty">
-                  {card.systemConcept}
+                  {card.solution}
                 </p>
               </div>
               <div className="h-px w-12 bg-border mx-auto" />
               <div className="space-y-2">
                 <p className="text-sm font-mono text-muted-foreground/70 uppercase">The Human Paradox</p>
                 <p className="text-xl italic font-display text-foreground leading-snug text-pretty">
-                  {card.humanContext}
+                  {card.problem}
                 </p>
               </div>
-              {card.quote && (
-                <div className="pt-4 text-center">
-                  <span className="text-xs font-medium text-muted-foreground italic">
-                    "{card.quote}"
-                  </span>
-                </div>
-              )}
+              <div className="pt-4 text-center">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Readiness Level: {card.handoffReadiness}/10
+                </span>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
