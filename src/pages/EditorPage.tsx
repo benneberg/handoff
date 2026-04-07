@@ -58,7 +58,7 @@ export function EditorPage() {
       });
       initializedRef.current = true;
     }
-  }, [existingCard, isNew, location.state, reset]);
+  }, [existingCard, isNew, location.state?.template, reset]);
   const saveMutation = useMutation({
     mutationFn: (data: Partial<SystemCard>) => {
       const payload = { ...data, updatedAt: Date.now() };
@@ -79,7 +79,8 @@ export function EditorPage() {
       queryClient.invalidateQueries({ queryKey: ['cards'] });
       toast.success('System Purged');
       navigate('/');
-    }
+    },
+    onError: (err: Error) => toast.error(`Delete failed: ${err.message}`),
   });
   const handleChange = (field: keyof SystemCard, value: any) => {
     setFormData({ ...formData, [field]: value });
@@ -157,7 +158,7 @@ export function EditorPage() {
             </Button>
             <Button onClick={() => saveMutation.mutate(formData)} disabled={saveMutation.isPending || !hasValidProjectName} className="rounded-full px-6">
               {saveMutation.isPending ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Hexagon className="size-4 mr-2" />}
-              {isNew ? 'Initialize' : 'Save'}
+              Save
             </Button>
           </div>
         </header>
@@ -174,7 +175,7 @@ export function EditorPage() {
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-mono text-muted-foreground">System Name</Label>
                 <Input
-                  className="bg-secondary/30 border-none h-12 text-lg focus-visible:ring-primary"
+                  className={`bg-secondary/30 border-none h-12 text-lg focus-visible:ring-primary ${!hasValidProjectName ? 'border-destructive ring-2 ring-destructive/50 focus-visible:ring-destructive' : ''}`}
                   placeholder="e.g. Graceful Degradation"
                   value={formData.projectName || ''}
                   onChange={e => handleChange('projectName', e.target.value)}

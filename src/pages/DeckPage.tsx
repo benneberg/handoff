@@ -41,29 +41,30 @@ export function DeckPage() {
   const toggleShuffle = useCallback(() => {
     if (shuffledOrder) {
       // Unshuffle: find current card's original index
-      const originalIndex = deckOrder[currentIndex];
+      const originalIndex = shuffledOrder[currentIndex];
       setShuffledOrder(null);
       setCurrentIndex(originalIndex);
     } else {
       // Shuffle: create new permutation but keep user on same card
       const indices = cards.map((_, i) => i);
-      const currentOriginalIndex = currentIndex; // Since shuffledOrder was null, deckOrder[currentIndex] === currentIndex
+      const currentOriginalIndex = deckOrder[currentIndex];
       const newOrder = [...indices].sort(() => Math.random() - 0.5);
       const newPosition = newOrder.indexOf(currentOriginalIndex);
       setShuffledOrder(newOrder);
       setCurrentIndex(newPosition);
     }
-  }, [shuffledOrder, cards, currentIndex, deckOrder]);
+  }, [shuffledOrder, cards, deckOrder, currentIndex]);
   const paginate = useCallback((newDirection: number) => {
     setCurrentIndex((prev) => {
+      const currentDeckOrder = deckOrder;
       const nextIndex = prev + newDirection;
-      if (nextIndex >= 0 && nextIndex < deckOrder.length) {
+      if (nextIndex >= 0 && nextIndex < currentDeckOrder.length) {
         setDirection(newDirection);
         return nextIndex;
       }
       return prev;
     });
-  }, [deckOrder.length]);
+  }, [deckOrder]);
   useHotkeys('arrowright', () => paginate(1), [paginate]);
   useHotkeys('arrowleft', () => paginate(-1), [paginate]);
   useHotkeys('escape', () => navigate('/'));
@@ -137,7 +138,7 @@ export function DeckPage() {
             variant="ghost"
             size="icon"
             className="h-16 w-16 rounded-full hover:bg-stone-100 dark:hover:bg-stone-900 transition-all disabled:opacity-0"
-            disabled={currentIndex === cards.length - 1}
+            disabled={currentIndex === deckOrder.length - 1}
             onClick={() => paginate(1)}
           >
             <ChevronRight className="size-8 text-muted-foreground" />
@@ -161,7 +162,7 @@ export function DeckPage() {
           variant="outline"
           size="icon"
           className="rounded-full"
-          disabled={currentIndex === cards.length - 1}
+          disabled={currentIndex === deckOrder.length - 1}
           onClick={() => paginate(1)}
         >
           <ChevronRight className="size-5" />
