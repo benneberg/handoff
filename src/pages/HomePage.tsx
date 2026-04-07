@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, RefreshCw, Info, Binary, Download, Shuffle, ChevronRight, FileText } from 'lucide-react';
+import { Plus, Search, RefreshCw, Info, Binary, Download, Shuffle, ChevronRight, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/tabs'; // Using local reference shorthand if available, or @/components/ui/tabs
+import { Tabs as UiTabs, TabsContent as UiTabsContent, TabsList as UiTabsList, TabsTrigger as UiTabsTrigger } from '@/components/ui/tabs';
 import { GuideModal } from '@/components/modals/GuideModal';
 import { api } from '@/lib/api-client';
 import type { SystemCard, CardTemplate } from '@shared/types';
@@ -60,21 +61,21 @@ export function HomePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-8 md:py-10 lg:py-12 space-y-12">
           {/* Header */}
-          <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Binary className="size-6 text-primary" />
+              <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate('/')}>
+                <Binary className="size-6 text-primary group-hover:rotate-12 transition-transform" />
                 <h1 className="text-3xl font-display font-bold tracking-tight">SYSCARDS</h1>
               </div>
               <p className="text-muted-foreground text-sm uppercase tracking-widest font-mono">
                 System Design for the Human Condition
               </p>
             </div>
-            <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-full border border-border/50">
+            <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-full border border-border/50 backdrop-blur-sm">
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => refetch()}>
                 <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={handleShuffle}>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={handleShuffle} disabled={cards.length < 2}>
                 <Shuffle className="size-4" />
               </Button>
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setGuideOpen(true)}>
@@ -83,42 +84,42 @@ export function HomePage() {
               <Button variant="ghost" size="icon" className={cn("rounded-full h-8 w-8", showSearch && "bg-accent")} onClick={() => setShowSearch(!showSearch)}>
                 <Search className="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={handleExportAll}>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={handleExportAll} disabled={cards.length === 0}>
                 <Download className="size-4" />
               </Button>
               <div className="w-px h-4 bg-border mx-1" />
-              <Button onClick={() => navigate('/new')} size="sm" className="rounded-full h-8 px-4">
+              <Button onClick={() => navigate('/new')} size="sm" className="rounded-full h-8 px-4 shadow-sm hover:scale-105 active:scale-95 transition-all">
                 <Plus className="size-4 mr-1" /> New
               </Button>
             </div>
           </header>
           {showSearch && (
-            <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="animate-in fade-in slide-in-from-top-4 duration-300 relative z-10">
               <Input
                 autoFocus
                 placeholder="Search architecture..."
-                className="bg-secondary/50 border-none rounded-2xl h-12 text-lg px-6"
+                className="bg-secondary/50 border-none rounded-2xl h-14 text-lg px-6 shadow-soft focus-visible:ring-primary"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           )}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            <div className="flex items-center justify-between border-b">
-              <TabsList className="bg-transparent h-auto p-0 space-x-8">
-                <TabsTrigger value="my-cards" className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent shadow-none font-bold">
-                  Cards <span className="ml-2 text-xs font-mono text-muted-foreground">({cards.length})</span>
-                </TabsTrigger>
-                <TabsTrigger value="templates" className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent shadow-none font-bold">
+          <UiTabs value={activeTab} onValueChange={setActiveTab} className="space-y-8 relative z-10">
+            <div className="flex items-center justify-between border-b border-border/40">
+              <UiTabsList className="bg-transparent h-auto p-0 space-x-8">
+                <UiTabsTrigger value="my-cards" className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent shadow-none font-bold text-muted-foreground data-[state=active]:text-foreground transition-all">
+                  Cards <span className="ml-2 text-xs font-mono opacity-50">({cards.length})</span>
+                </UiTabsTrigger>
+                <UiTabsTrigger value="templates" className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent shadow-none font-bold text-muted-foreground data-[state=active]:text-foreground transition-all">
                   Templates
-                </TabsTrigger>
-              </TabsList>
+                </UiTabsTrigger>
+              </UiTabsList>
             </div>
-            <TabsContent value="my-cards" className="mt-0">
+            <UiTabsContent value="my-cards" className="mt-0 focus-visible:outline-none">
               {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="h-40 rounded-2xl bg-secondary/30 animate-pulse" />
+                    <div key={i} className="h-44 rounded-2xl bg-secondary/30 animate-pulse border border-border/20" />
                   ))}
                 </div>
               ) : filteredCards.length > 0 ? (
@@ -126,12 +127,12 @@ export function HomePage() {
                   {filteredCards.map(card => (
                     <Card
                       key={card.id}
-                      className="group cursor-pointer border-none shadow-soft bg-card/60 backdrop-blur-md hover:bg-card/80 transition-all duration-300 hover:shadow-md hover:-translate-y-1 rounded-2xl"
+                      className="group cursor-pointer border-none shadow-soft bg-card/60 backdrop-blur-md hover:bg-card/80 transition-all duration-300 hover:shadow-md hover:-translate-y-1 rounded-2xl border border-border/10"
                       onClick={() => navigate(`/edit/${card.id}`)}
                     >
                       <CardHeader className="pb-4">
                         <div className="flex justify-between items-start mb-2">
-                          <Badge variant="outline" className="font-mono text-[10px] rounded-full px-2 py-0">
+                          <Badge variant="outline" className="font-mono text-[10px] rounded-full px-2 py-0 border-primary/20">
                             {card.handoffReadiness}/10 READY
                           </Badge>
                           <ChevronRight className="size-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -139,20 +140,20 @@ export function HomePage() {
                         <CardTitle className="text-xl font-display font-bold truncate">
                           {card.projectName}
                         </CardTitle>
-                        <CardDescription className="line-clamp-2 text-sm leading-relaxed">
+                        <CardDescription className="line-clamp-2 text-sm leading-relaxed min-h-[2.5rem]">
                           {card.oneLiner}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
                           <div className="flex items-center gap-1">
-                            <span className="text-green-500">✓</span> {card.whatWorks.length}
+                            <span className="text-green-500/70 font-bold">✓</span> {card.whatWorks.length}
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="text-red-500">✗</span> {card.whatDoesntWork.length}
+                            <span className="text-red-500/70 font-bold">✗</span> {card.whatDoesntWork.length}
                           </div>
-                          <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                            EDIT
+                          <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-primary">
+                            SYSTEM LOGS
                           </div>
                         </div>
                       </CardContent>
@@ -160,36 +161,48 @@ export function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-32 space-y-10 animate-in fade-in duration-700">
+                <div className="text-center py-24 md:py-32 space-y-12 animate-in fade-in zoom-in-95 duration-700">
                   <div className="space-y-4">
-                    <h2 className="text-8xl md:text-9xl font-display font-black tracking-tighter text-foreground/5 leading-none select-none">
+                    <h2 className="text-9xl md:text-[12rem] font-display font-black tracking-tighter text-foreground/[0.03] dark:text-foreground/[0.05] leading-none select-none pointer-events-none">
                       Cards 0
                     </h2>
-                    <div 
-                      className="flex items-center justify-center gap-2 group cursor-pointer"
+                    <div
+                      className="flex items-center justify-center gap-3 group cursor-pointer active:scale-95 transition-all"
                       onClick={() => setActiveTab('templates')}
                     >
-                      <span className="text-xl md:text-2xl font-display font-medium text-muted-foreground hover:text-foreground transition-colors underline decoration-border/40 underline-offset-8">
+                      <span className="text-xl md:text-2xl font-display font-medium text-muted-foreground group-hover:text-foreground transition-colors underline decoration-border/40 underline-offset-8">
                         New Templates
                       </span>
                       <Search className="size-5 text-muted-foreground group-hover:text-primary animate-pulse transition-colors" />
                     </div>
                   </div>
-                  <Button onClick={() => navigate('/new')} variant="outline" className="rounded-full px-8 hover:bg-primary hover:text-primary-foreground transition-all">
-                    Initialize System
-                  </Button>
+                  <div className="flex flex-col items-center gap-4">
+                    <Button 
+                      onClick={() => navigate('/new')} 
+                      variant="outline" 
+                      className="rounded-full px-10 h-12 hover:bg-primary hover:text-primary-foreground border-border/60 hover:border-primary transition-all font-bold shadow-sm"
+                    >
+                      Initialize System
+                    </Button>
+                    <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest opacity-50">
+                      Empty Index Detected
+                    </p>
+                  </div>
                 </div>
               )}
-            </TabsContent>
-            <TabsContent value="templates" className="mt-0">
+            </UiTabsContent>
+            <UiTabsContent value="templates" className="mt-0 focus-visible:outline-none">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {templates?.map(template => (
                   <Card
                     key={template.id}
-                    className="border-none shadow-soft bg-secondary/30 hover:bg-secondary/50 transition-all cursor-pointer group rounded-2xl"
+                    className="border-none shadow-soft bg-secondary/30 hover:bg-secondary/50 transition-all cursor-pointer group rounded-2xl border border-border/20"
                     onClick={() => navigate('/new', { state: { template } })}
                   >
                     <CardHeader>
+                      <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center mb-4 border border-border/50 group-hover:scale-110 transition-transform">
+                        <Sparkles className="size-5 text-primary/60" />
+                      </div>
                       <CardTitle className="text-lg font-display font-bold">
                         {template.name}
                       </CardTitle>
@@ -197,16 +210,16 @@ export function HomePage() {
                         {template.description}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex justify-end">
-                      <Button variant="ghost" size="sm" className="group-hover:text-primary rounded-full">
-                        Use Template
+                    <CardContent className="flex justify-end pt-0">
+                      <Button variant="ghost" size="sm" className="group-hover:text-primary rounded-full hover:bg-background/80">
+                        Deploy Pattern
                       </Button>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-            </TabsContent>
-          </Tabs>
+            </UiTabsContent>
+          </UiTabs>
         </div>
       </div>
     </div>

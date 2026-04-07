@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Hexagon, Diamond, Trash2, X, Loader2, Check, Send, RotateCcw, RotateCw, Eraser } from 'lucide-react';
+import { ArrowLeft, Hexagon, Diamond, Trash2, X, Loader2, Check, Send, RotateCcw, RotateCw, Eraser, Sparkles, Target, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -117,7 +117,7 @@ export function EditorPage() {
   if (id && isLoadError) {
     return (
       <div className="flex flex-col items-center justify-center h-screen space-y-4">
-        <h2 className="text-2xl font-bold">Failed to load system card</h2>
+        <h2 className="text-2xl font-bold text-foreground">Failed to load system card</h2>
         <Button onClick={() => navigate('/')}>Return Home</Button>
       </div>
     );
@@ -159,9 +159,12 @@ export function EditorPage() {
           </div>
         </header>
         <main className="max-w-4xl mx-auto space-y-20 pb-20">
+          {/* Concept Definition */}
           <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground">Concept Definition</h2>
+              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground flex items-center gap-2">
+                <Target className="size-5 text-muted-foreground" /> Concept Definition
+              </h2>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Identity & Proposition</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -194,16 +197,19 @@ export function EditorPage() {
               </div>
             </div>
           </section>
+          {/* Logic Engine */}
           <section className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground">Logic Engine</h2>
+              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground flex items-center gap-2">
+                <Zap className="size-5 text-muted-foreground" /> Logic Engine
+              </h2>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Architecture & Flow</p>
             </div>
             <div className="space-y-8">
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-mono text-muted-foreground">The Human Condition (The Problem)</Label>
                 <Textarea
-                  className="min-h-[120px] bg-secondary/30 border-none text-lg resize-none"
+                  className="min-h-[120px] bg-secondary/30 border-none text-lg resize-none focus-visible:ring-primary"
                   placeholder="Describe the human struggle..."
                   value={formData.problem || ''}
                   onChange={e => handleChange('problem', e.target.value)}
@@ -212,7 +218,7 @@ export function EditorPage() {
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-mono text-muted-foreground">The System Architecture (The Solution)</Label>
                 <Textarea
-                  className="min-h-[120px] bg-secondary/30 border-none text-lg resize-none"
+                  className="min-h-[120px] bg-secondary/30 border-none text-lg resize-none focus-visible:ring-primary"
                   placeholder="How does logic solve the problem?"
                   value={formData.solution || ''}
                   onChange={e => handleChange('solution', e.target.value)}
@@ -221,7 +227,7 @@ export function EditorPage() {
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-mono text-muted-foreground">Core Workflow Logic</Label>
                 <Textarea
-                  className="bg-secondary/30 border-none font-mono text-sm min-h-[100px]"
+                  className="bg-secondary/30 border-none font-mono text-sm min-h-[100px] focus-visible:ring-primary"
                   placeholder="Input -> Reasoning -> Action -> Loop"
                   value={formData.coreWorkflow || ''}
                   onChange={e => handleChange('coreWorkflow', e.target.value)}
@@ -229,9 +235,59 @@ export function EditorPage() {
               </div>
             </div>
           </section>
+          {/* Strategic Context */}
           <section className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground">Execution State</h2>
+              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground flex items-center gap-2">
+                <Sparkles className="size-5 text-muted-foreground" /> Strategic Context
+              </h2>
+              <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Market & Growth Strategy</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-mono text-muted-foreground">MVP Build Order</Label>
+                <Textarea
+                  className="bg-secondary/30 border-none min-h-[100px] focus-visible:ring-primary"
+                  placeholder="1. Build X, 2. Test Y..."
+                  value={formData.mvpBuildOrder || ''}
+                  onChange={e => handleChange('mvpBuildOrder', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-mono text-muted-foreground">Differentiation</Label>
+                <Textarea
+                  className="bg-secondary/30 border-none min-h-[100px] focus-visible:ring-primary"
+                  placeholder="Why is this system unique?"
+                  value={formData.differentiation || ''}
+                  onChange={e => handleChange('differentiation', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-mono text-muted-foreground">Sustainability / Monetization</Label>
+                <Input
+                  className="bg-secondary/30 border-none h-12 focus-visible:ring-primary"
+                  placeholder="How does this scale or sustain?"
+                  value={formData.monetization || ''}
+                  onChange={e => handleChange('monetization', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-mono text-muted-foreground">Next Expansion</Label>
+                <Input
+                  className="bg-secondary/30 border-none h-12 focus-visible:ring-primary"
+                  placeholder="Future V2 capabilities..."
+                  value={formData.nextExpansion || ''}
+                  onChange={e => handleChange('nextExpansion', e.target.value)}
+                />
+              </div>
+            </div>
+          </section>
+          {/* Execution State */}
+          <section className="space-y-8">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground flex items-center gap-2">
+                <Check className="size-5 text-muted-foreground" /> Execution State
+              </h2>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Readiness & Validation</p>
             </div>
             <div className="space-y-12">
@@ -252,7 +308,7 @@ export function EditorPage() {
                 <div className="space-y-4">
                   <Label className="text-xs uppercase font-mono text-green-600 dark:text-green-400">✓ What Works Well</Label>
                   <Input
-                    className="bg-secondary/30 border-none"
+                    className="bg-secondary/30 border-none focus-visible:ring-green-500/50"
                     placeholder="Add operational success..."
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
@@ -274,7 +330,7 @@ export function EditorPage() {
                 <div className="space-y-4">
                   <Label className="text-xs uppercase font-mono text-red-600 dark:text-red-400">✗ System Failures</Label>
                   <Input
-                    className="bg-secondary/30 border-none"
+                    className="bg-secondary/30 border-none focus-visible:ring-red-500/50"
                     placeholder="Add known bugs/limitations..."
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
