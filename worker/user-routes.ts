@@ -19,7 +19,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   app.post('/api/cards', async (c) => {
     const data = await c.req.json();
-    if (!data.projectName) return bad(c, 'Project name is required');
+    if (!data.projectName?.trim()) return bad(c, 'Project name required (non-whitespace)');
+    data.projectName = data.projectName.trim();
     const now = Date.now();
     const newCard = {
       ...SystemCardEntity.initialState,
@@ -35,6 +36,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const updates = await c.req.json();
     const card = new SystemCardEntity(c.env, id);
     if (!await card.exists()) return notFound(c, 'Card not found');
+    if (!updates.projectName?.trim()) return bad(c, 'Project name required (non-whitespace)');
     const { id: _, createdAt: __, ...safeUpdates } = updates;
     const finalUpdates = {
       ...safeUpdates,
