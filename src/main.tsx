@@ -13,6 +13,7 @@ import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import { EditorPage } from '@/pages/EditorPage'
+import { DeckPage } from '@/pages/DeckPage'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -35,6 +36,16 @@ const router = createBrowserRouter([
   {
     path: "/edit/:id",
     element: <EditorPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/deck",
+    element: <DeckPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/deck/:id",
+    element: <DeckPage />,
     errorElement: <RouteErrorBoundary />,
   },
 ]);

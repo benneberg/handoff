@@ -3,32 +3,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { SystemCard } from '@shared/types';
+import { cn } from '@/lib/utils';
 interface ParadoxViewerProps {
   card: SystemCard;
   direction: number;
+  isZenMode?: boolean;
 }
 const variants = {
   enter: (direction: number) => ({
-    x: direction > 0 ? 100 : -100,
+    x: direction > 0 ? 200 : -200,
     opacity: 0,
-    scale: 0.95
+    scale: 0.9,
+    filter: 'blur(10px)'
   }),
   center: {
     zIndex: 1,
     x: 0,
     opacity: 1,
-    scale: 1
+    scale: 1,
+    filter: 'blur(0px)'
   },
   exit: (direction: number) => ({
     zIndex: 0,
-    x: direction < 0 ? 100 : -100,
+    x: direction < 0 ? 200 : -200,
     opacity: 0,
-    scale: 0.95
+    scale: 0.9,
+    filter: 'blur(10px)'
   })
 };
-export function ParadoxViewer({ card, direction }: ParadoxViewerProps) {
+export function ParadoxViewer({ card, direction, isZenMode = false }: ParadoxViewerProps) {
   return (
-    <div className="relative w-full max-w-2xl mx-auto min-h-[500px] flex items-center justify-center">
+    <div className={cn(
+      "relative w-full max-w-2xl mx-auto flex items-center justify-center",
+      isZenMode ? "min-h-[600px]" : "min-h-[500px]"
+    )}>
       <AnimatePresence initial={false} custom={direction} mode="wait">
         <motion.div
           key={card.id}
@@ -38,13 +46,17 @@ export function ParadoxViewer({ card, direction }: ParadoxViewerProps) {
           animate="center"
           exit="exit"
           transition={{
-            x: { type: "spring", stiffness: 400, damping: 40 },
-            opacity: { duration: 0.25 },
-            scale: { duration: 0.25 }
+            x: { type: "spring", stiffness: 300, damping: 30 },
+            opacity: { duration: 0.4 },
+            scale: { duration: 0.4 },
+            filter: { duration: 0.4 }
           }}
           className="w-full absolute"
         >
-          <Card className="border-none shadow-soft bg-card/90 backdrop-blur-md overflow-hidden border border-border/40 rounded-3xl">
+          <Card className={cn(
+            "border-none shadow-soft backdrop-blur-xl overflow-hidden border border-border/40 rounded-3xl transition-colors duration-500",
+            isZenMode ? "bg-card/95 shadow-2xl" : "bg-card/90"
+          )}>
             <CardHeader className="pt-12 pb-6 text-center space-y-4">
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">
@@ -54,11 +66,17 @@ export function ParadoxViewer({ card, direction }: ParadoxViewerProps) {
                   Ready Level: {card.handoffReadiness}/10
                 </Badge>
               </div>
-              <CardTitle className="text-3xl md:text-5xl font-display font-bold tracking-tighter text-foreground leading-tight px-4">
+              <CardTitle className={cn(
+                "font-display font-bold tracking-tighter text-foreground leading-tight px-4",
+                isZenMode ? "text-4xl md:text-6xl" : "text-3xl md:text-5xl"
+              )}>
                 {card.projectName}
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-8 md:px-16 pb-16 space-y-10">
+            <CardContent className={cn(
+              "px-8 pb-16 space-y-10",
+              isZenMode ? "md:px-20" : "md:px-16"
+            )}>
               <div className="space-y-3">
                 <p className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-widest text-center">Logic Integration</p>
                 <p className="text-lg md:text-xl text-foreground leading-relaxed text-pretty text-center font-medium">
@@ -75,13 +93,16 @@ export function ParadoxViewer({ card, direction }: ParadoxViewerProps) {
               </div>
               <div className="space-y-3">
                 <p className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-widest text-center">The Human Paradox</p>
-                <p className="text-xl md:text-2xl italic font-display text-foreground/80 leading-snug text-pretty text-center">
+                <p className={cn(
+                  "italic font-display text-foreground/80 leading-snug text-pretty text-center",
+                  isZenMode ? "text-2xl md:text-3xl" : "text-xl md:text-2xl"
+                )}>
                   "{card.problem}"
                 </p>
               </div>
               {card.oneLiner && (
                 <div className="pt-4 text-center">
-                  <p className="text-xs text-muted-foreground font-mono italic opacity-60">
+                  <p className="text-xs text-muted-foreground font-mono italic opacity-60 text-pretty">
                     // {card.oneLiner}
                   </p>
                 </div>
