@@ -7,6 +7,7 @@ export interface User {
   id: string;
   name: string;
 }
+export type TransmitVenue = 'hn' | 'twitter' | 'reddit' | 'discord' | 'generic';
 export interface SystemCard {
   id: string;
   projectName: string;
@@ -23,6 +24,7 @@ export interface SystemCard {
   whatDoesntWork: string[];
   handoffReadiness: number; // 1-10
   createdAt: number;
+  updatedAt: number;
 }
 export interface CardTemplate {
   id: string;

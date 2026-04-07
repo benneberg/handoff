@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, RefreshCw, FileText, Layout, ChevronRight, Binary } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus, Search, RefreshCw, Info, Binary, Download, Shuffle, ChevronRight, FileText } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { GuideModal } from '@/components/modals/GuideModal';
 import { api } from '@/lib/api-client';
 import type { SystemCard, CardTemplate } from '@shared/types';
 import { cn } from '@/lib/utils';
 export function HomePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [shuffledIds, setShuffledIds] = useState<string[] | null>(null);
   const { data: cardsData, isLoading, refetch } = useQuery({
     queryKey: ['cards'],
     queryFn: () => api<{ items: SystemCard[] }>('/api/cards'),
@@ -23,10 +28,27 @@ export function HomePage() {
     queryFn: () => api<CardTemplate[]>('/api/templates'),
   });
   const cards = cardsData?.items ?? [];
-  const filteredCards = cards.filter(c => 
-    c.projectName.toLowerCase().includes(search.toLowerCase()) || 
+  const displayCards = shuffledIds 
+    ? [...cards].sort((a, b) => shuffledIds.indexOf(a.id) - shuffledIds.indexOf(b.id))
+    : cards;
+  const filteredCards = displayCards.filter(c =>
+    c.projectName.toLowerCase().includes(search.toLowerCase()) ||
     c.oneLiner.toLowerCase().includes(search.toLowerCase())
   );
+  const handleShuffle = () => {
+    const ids = cards.map(c => c.id);
+    const shuffled = [...ids].sort(() => Math.random() - 0.5);
+    setShuffledIds(shuffled);
+  };
+  const handleExportAll = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "syscards_all_export.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
   return (
     <div className="min-h-screen bg-background selection:bg-primary/10">
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-30">
@@ -34,6 +56,7 @@ export function HomePage() {
         <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] rounded-full bg-stone-300 dark:bg-stone-900 blur-[100px]" />
       </div>
       <ThemeToggle />
+      <GuideModal open={guideOpen} onOpenChange={setGuideOpen} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-8 md:py-10 lg:py-12 space-y-12">
           {/* Header */}
@@ -47,56 +70,69 @@ export function HomePage() {
                 System Design for the Human Condition
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search architecture..." 
-                  className="pl-9 bg-secondary/50 border-none rounded-full"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <Button onClick={() => navigate('/new')} className="rounded-full shadow-lg">
-                <Plus className="size-4 mr-2" />
-                New Card
+            <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-full border border-border/50">
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => refetch()}>
+                <RefreshCw className={cn("size-4", isLoading && "animate-spin")} />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={handleShuffle}>
+                <Shuffle className="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setGuideOpen(true)}>
+                <Info className="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setShowSearch(!showSearch)}>
+                <Search className="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={handleExportAll}>
+                <Download className="size-4" />
+              </Button>
+              <div className="w-px h-4 bg-border mx-1" />
+              <Button onClick={() => navigate('/new')} size="sm" className="rounded-full h-8 px-4">
+                <Plus className="size-4 mr-1" /> New
               </Button>
             </div>
           </header>
+          {showSearch && (
+            <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+              <Input
+                autoFocus
+                placeholder="Search architecture..."
+                className="bg-secondary/50 border-none rounded-2xl h-12 text-lg px-6"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          )}
           <Tabs defaultValue="my-cards" className="space-y-8">
-            <div className="flex items-center justify-between">
-              <TabsList className="bg-secondary/50 p-1 rounded-full border-none">
-                <TabsTrigger value="my-cards" className="rounded-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                  My Cards
+            <div className="flex items-center justify-between border-b">
+              <TabsList className="bg-transparent h-auto p-0 space-x-8">
+                <TabsTrigger value="my-cards" className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent shadow-none font-bold">
+                  Cards <span className="ml-2 text-xs font-mono text-muted-foreground">({cards.length})</span>
                 </TabsTrigger>
-                <TabsTrigger value="templates" className="rounded-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <TabsTrigger value="templates" className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent shadow-none font-bold">
                   Templates
                 </TabsTrigger>
               </TabsList>
-              <Button variant="ghost" size="sm" onClick={() => refetch()} className="text-muted-foreground">
-                <RefreshCw className={cn("size-4 mr-2", isLoading && "animate-spin")} />
-                Refresh
-              </Button>
             </div>
             <TabsContent value="my-cards" className="mt-0">
               {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="h-48 rounded-xl bg-secondary/30 animate-pulse" />
+                    <div key={i} className="h-40 rounded-2xl bg-secondary/30 animate-pulse" />
                   ))}
                 </div>
               ) : filteredCards.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredCards.map(card => (
-                    <Card 
-                      key={card.id} 
-                      className="group cursor-pointer border-none shadow-soft bg-card/60 backdrop-blur-md hover:bg-card/80 transition-all duration-300 hover:shadow-md hover:-translate-y-1"
+                    <Card
+                      key={card.id}
+                      className="group cursor-pointer border-none shadow-soft bg-card/60 backdrop-blur-md hover:bg-card/80 transition-all duration-300 hover:shadow-md hover:-translate-y-1 rounded-2xl"
                       onClick={() => navigate(`/edit/${card.id}`)}
                     >
                       <CardHeader className="pb-4">
                         <div className="flex justify-between items-start mb-2">
                           <Badge variant="outline" className="font-mono text-[10px] rounded-full px-2 py-0">
-                            READINESS {card.handoffReadiness}/10
+                            {card.handoffReadiness}/10 READY
                           </Badge>
                           <ChevronRight className="size-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                         </div>
@@ -108,12 +144,16 @@ export function HomePage() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex flex-wrap gap-1">
-                          {card.whatWorks.slice(0, 2).map((tag, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[9px] uppercase tracking-tighter font-medium px-1.5 py-0">
-                              {tag}
-                            </Badge>
-                          ))}
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
+                          <div className="flex items-center gap-1">
+                            <span className="text-green-500">✓</span> {card.whatWorks.length}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-red-500">✗</span> {card.whatDoesntWork.length}
+                          </div>
+                          <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                            EDIT
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -125,25 +165,22 @@ export function HomePage() {
                     <FileText className="size-6" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-lg font-medium">No cards found</p>
-                    <p className="text-sm text-muted-foreground">Start by creating a new system card or browsing templates.</p>
+                    <p className="text-lg font-medium">No system cards found</p>
+                    <p className="text-sm text-muted-foreground">Start refactoring your life logic.</p>
                   </div>
+                  <Button onClick={() => navigate('/new')} className="rounded-full">Create Your First Card</Button>
                 </div>
               )}
             </TabsContent>
             <TabsContent value="templates" className="mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {templates?.map(template => (
-                  <Card 
-                    key={template.id} 
-                    className="border-none shadow-soft bg-secondary/30 hover:bg-secondary/50 transition-colors cursor-pointer group"
+                  <Card
+                    key={template.id}
+                    className="border-none shadow-soft bg-secondary/30 hover:bg-secondary/50 transition-all cursor-pointer group rounded-2xl"
                     onClick={() => navigate('/new', { state: { template } })}
                   >
                     <CardHeader>
-                      <div className="flex items-center gap-2 mb-2 text-primary">
-                        <Layout className="size-4" />
-                        <span className="text-[10px] font-mono uppercase tracking-widest">Preset Architecture</span>
-                      </div>
                       <CardTitle className="text-lg font-display font-bold">
                         {template.name}
                       </CardTitle>
@@ -152,7 +189,7 @@ export function HomePage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex justify-end">
-                      <Button variant="ghost" size="sm" className="group-hover:text-primary">
+                      <Button variant="ghost" size="sm" className="group-hover:text-primary rounded-full">
                         Use Template
                       </Button>
                     </CardContent>
