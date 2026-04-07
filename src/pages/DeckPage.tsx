@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Shuffle, Binary, X } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ParadoxViewer } from '@/components/ParadoxViewer';
 import { api } from '@/lib/api-client';
@@ -14,32 +13,47 @@ export function DeckPage() {
   const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [isShuffled, setIsShuffled] = useState(false);
+  const [shuffledOrder, setShuffledOrder] = useState<number[] | null>(null);
   const { data: cardsData, isLoading } = useQuery({
     queryKey: ['cards'],
     queryFn: () => api<{ items: SystemCard[] }>('/api/cards'),
   });
   const cards = useMemo(() => cardsData?.items ?? [], [cardsData?.items]);
-  // Handle shuffling logic
   const deckOrder = useMemo(() => {
-    const indices = cards.map((_, i) => i);
-    if (isShuffled) {
-      // Use a simple seeded-like or stable sort if possible, 
-      // but for "Zen Mode" a fresh shuffle on toggle is expected.
-      return [...indices].sort(() => Math.random() - 0.5);
+    if (shuffledOrder && shuffledOrder.length === cards.length) {
+      return shuffledOrder;
     }
-    return indices;
-  }, [cards, isShuffled]);
-  // If a specific ID is provided, find its index in the current order
+    return cards.map((_, i) => i);
+  }, [cards, shuffledOrder]);
+  const activeCard = useMemo(() => cards[deckOrder[currentIndex]], [cards, deckOrder, currentIndex]);
+  // Handle Initial ID Routing or deep links
   useEffect(() => {
     if (id && cards.length > 0) {
-      const targetIndexInCards = cards.findIndex(c => c.id === id);
-      const targetIndexInOrder = deckOrder.indexOf(targetIndexInCards);
-      if (targetIndexInOrder !== -1) {
-        setCurrentIndex(targetIndexInOrder);
+      const cardIndex = cards.findIndex(c => c.id === id);
+      if (cardIndex !== -1) {
+        const orderIndex = deckOrder.indexOf(cardIndex);
+        if (orderIndex !== -1 && orderIndex !== currentIndex) {
+          setCurrentIndex(orderIndex);
+        }
       }
     }
   }, [id, cards, deckOrder]);
+  const toggleShuffle = useCallback(() => {
+    if (shuffledOrder) {
+      // Unshuffle: find current card's original index
+      const originalIndex = deckOrder[currentIndex];
+      setShuffledOrder(null);
+      setCurrentIndex(originalIndex);
+    } else {
+      // Shuffle: create new permutation but keep user on same card
+      const indices = cards.map((_, i) => i);
+      const currentOriginalIndex = currentIndex; // Since shuffledOrder was null, deckOrder[currentIndex] === currentIndex
+      const newOrder = [...indices].sort(() => Math.random() - 0.5);
+      const newPosition = newOrder.indexOf(currentOriginalIndex);
+      setShuffledOrder(newOrder);
+      setCurrentIndex(newPosition);
+    }
+  }, [shuffledOrder, cards, currentIndex, deckOrder]);
   const paginate = useCallback((newDirection: number) => {
     setCurrentIndex((prev) => {
       const nextIndex = prev + newDirection;
@@ -68,15 +82,11 @@ export function DeckPage() {
       </div>
     );
   }
-  const activeCardIndex = deckOrder[currentIndex];
-  const activeCard = cards[activeCardIndex];
   return (
     <div className="h-screen w-full bg-background overflow-hidden flex flex-col selection:bg-primary/10 relative">
-      {/* Background Ambience */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-stone-100 dark:bg-stone-900/50 blur-[150px] rounded-full opacity-50" />
       </div>
-      {/* Zen Header */}
       <header className="p-6 md:p-10 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate('/')}>
@@ -89,34 +99,32 @@ export function DeckPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className={cn(
-              "rounded-full font-mono text-[10px] tracking-widest transition-colors", 
-              isShuffled && "text-primary bg-primary/10"
+              "rounded-full font-mono text-[10px] tracking-widest transition-all",
+              shuffledOrder && "text-primary bg-primary/10"
             )}
-            onClick={() => setIsShuffled(!isShuffled)}
+            onClick={toggleShuffle}
           >
-            <Shuffle className={cn("size-3 mr-2", isShuffled && "animate-pulse")} />
-            {isShuffled ? 'UNSHUFFLE' : 'SHUFFLE DECK'}
+            <Shuffle className={cn("size-3 mr-2", shuffledOrder && "animate-pulse")} />
+            {shuffledOrder ? 'UNSHUFFLE' : 'SHUFFLE DECK'}
           </Button>
         </div>
       </header>
-      {/* Main Content Stage */}
-      <main className="flex-1 flex items-center justify-center px-4 relative z-10">
+      <main className="flex-1 flex items-center justify-center px-4 relative z-10 overflow-hidden">
         <div className="w-full max-w-4xl relative h-full flex items-center justify-center">
-          <ParadoxViewer 
-            card={activeCard} 
-            direction={direction} 
-            isZenMode 
+          <ParadoxViewer
+            card={activeCard}
+            direction={direction}
+            isZenMode
           />
         </div>
-        {/* Navigation Overlays (Desktop) */}
         <div className="hidden md:flex absolute inset-y-0 left-0 items-center px-8">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-16 w-16 rounded-full hover:bg-stone-100 dark:hover:bg-stone-900 transition-all disabled:opacity-0"
             disabled={currentIndex === 0}
             onClick={() => paginate(-1)}
@@ -125,9 +133,9 @@ export function DeckPage() {
           </Button>
         </div>
         <div className="hidden md:flex absolute inset-y-0 right-0 items-center px-8">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-16 w-16 rounded-full hover:bg-stone-100 dark:hover:bg-stone-900 transition-all disabled:opacity-0"
             disabled={currentIndex === cards.length - 1}
             onClick={() => paginate(1)}
@@ -136,12 +144,11 @@ export function DeckPage() {
           </Button>
         </div>
       </main>
-      {/* Mobile Footer Nav */}
       <footer className="md:hidden p-8 flex items-center justify-between z-20">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className="rounded-full" 
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full"
           disabled={currentIndex === 0}
           onClick={() => paginate(-1)}
         >
@@ -150,10 +157,10 @@ export function DeckPage() {
         <div className="font-mono text-xs opacity-50 uppercase tracking-widest">
           {Math.round(((currentIndex + 1) / cards.length) * 100)}% Consumed
         </div>
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className="rounded-full" 
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full"
           disabled={currentIndex === cards.length - 1}
           onClick={() => paginate(1)}
         >

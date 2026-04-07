@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Plus, Search, RefreshCw, Info, Binary, Download, Shuffle, ChevronRight, Sparkles, Play, Maximize2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,7 @@ export function HomePage() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards, null, 2));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "syscards_all_export.json");
+    downloadAnchorNode.setAttribute("download", `syscards_export_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
@@ -87,8 +87,15 @@ export function HomePage() {
                 <Download className="size-4" />
               </Button>
               <div className="w-px h-5 bg-border/60 mx-1" />
-              <Button onClick={() => navigate('/deck')} variant="outline" size="sm" title="Enter Zen Mode" className="group rounded-full h-8 px-4 border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 shadow-sm" disabled={cards.length === 0}>
-                <Play className="size-3 mr-2" /> Play Deck
+              <Button 
+                onClick={() => navigate('/deck')} 
+                variant="outline" 
+                size="sm" 
+                title="Enter Zen Mode" 
+                className="group rounded-full h-8 px-4 border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 shadow-sm focus-visible:ring-offset-2 ring-offset-background" 
+                disabled={cards.length === 0}
+              >
+                <Play className="size-3 mr-2 group-hover:scale-125 transition-transform" /> Play Deck
               </Button>
               <Button onClick={() => navigate('/new')} size="sm" className="rounded-full h-8 px-4 shadow-sm hover:scale-105 active:scale-95 transition-all">
                 <Plus className="size-4 mr-1" /> New
@@ -107,8 +114,8 @@ export function HomePage() {
             </div>
           )}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8 relative z-10">
-            <div className="flex items-center justify-between border-b border-border/40">
-              <TabsList className="bg-transparent h-auto p-0 space-x-8">
+            <div className="flex items-center justify-between border-b border-border/40 overflow-x-auto scrollbar-hide">
+              <TabsList className="bg-transparent h-auto p-0 space-x-8 w-full sm:w-auto">
                 <TabsTrigger value="my-cards" className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent shadow-none font-bold text-muted-foreground data-[state=active]:text-foreground transition-all">
                   Cards <span className="ml-2 text-xs font-mono opacity-50">({cards.length})</span>
                 </TabsTrigger>
@@ -153,9 +160,9 @@ export function HomePage() {
                           <div className="flex items-center gap-1">
                             <span className="text-red-500/70 font-bold">✗</span> {card.whatDoesntWork.length}
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="ml-auto h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 hover:bg-background"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -170,31 +177,31 @@ export function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-24 md:py-32 lg:py-48 space-y-12 animate-in fade-in zoom-in-95 duration-700 max-w-4xl mx-auto">
-                  <div className="space-y-4">
-                    <h2 className="text-9xl md:text-[12rem] font-display font-black tracking-tighter text-foreground/[0.03] dark:text-foreground/[0.05] leading-none select-none pointer-events-none">
-                      Cards 0
+                <div className="text-center py-32 md:py-48 lg:py-64 space-y-16 animate-in fade-in zoom-in-95 duration-700 max-w-4xl mx-auto">
+                  <div className="space-y-6">
+                    <h2 className="text-9xl md:text-[14rem] font-display font-black tracking-tighter text-foreground/[0.03] dark:text-foreground/[0.05] leading-none select-none pointer-events-none">
+                      INDEX 0
                     </h2>
                     <div
-                      className="flex items-center justify-center gap-3 group cursor-pointer active:scale-95 transition-all"
+                      className="flex items-center justify-center gap-4 group cursor-pointer active:scale-95 transition-all"
                       onClick={() => setActiveTab('templates')}
                     >
-                      <span className="text-xl md:text-2xl font-display font-medium text-muted-foreground group-hover:text-foreground transition-colors underline decoration-border/40 underline-offset-8">
-                        New Templates
+                      <span className="text-xl md:text-3xl font-display font-medium text-muted-foreground group-hover:text-foreground transition-colors underline decoration-border/40 underline-offset-8">
+                        Deploy From Templates
                       </span>
-                      <Search className="size-5 text-muted-foreground group-hover:text-primary animate-pulse transition-colors" />
+                      <Search className="size-6 text-muted-foreground group-hover:text-primary animate-pulse transition-colors" />
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-4">
                     <Button
                       onClick={() => navigate('/new')}
                       variant="outline"
-                      className="rounded-full px-10 h-12 hover:bg-primary hover:text-primary-foreground border-border/60 hover:border-primary transition-all font-bold shadow-sm"
+                      className="rounded-full px-12 h-14 hover:bg-primary hover:text-primary-foreground border-border/60 hover:border-primary transition-all font-bold shadow-lg"
                     >
                       Initialize System
                     </Button>
-                    <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest opacity-50">
-                      Empty Index Detected
+                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-[0.3em] opacity-40">
+                      Standby for Architecture
                     </p>
                   </div>
                 </div>

@@ -1,50 +1,59 @@
 import type { SystemCard, TransmitVenue } from '@shared/types';
 export function formatForHN(card: SystemCard): string {
   return `Show HN: ${card.projectName} – ${card.oneLiner}
-I built a "System Card" for this project. It's a structured architecture for the human condition.
+I've been working on a "System Card" methodology for personal and technical architecture. This card represents a framework for handling specific human conditions through system design principles.
 Problem: ${card.problem}
 Solution: ${card.solution}
-Core Workflow:
+Core Logic Flow:
 ${card.coreWorkflow}
-Readiness Score: ${card.handoffReadiness}/10
-Build Order: ${card.mvpBuildOrder}
-What do you think of this architectural approach to life systems?`;
+Implementation Readiness: ${card.handoffReadiness}/10
+Build Order Strategy: ${card.mvpBuildOrder}
+Would love to hear how other architects handle these kinds of "human-in-the-loop" system failures.`;
 }
 export function formatForTwitter(card: SystemCard): string {
-  const intro = `🧵 New Architecture: ${card.projectName}\n\n"${card.oneLiner}"\n\nA thread on system design for the human condition. 1/n`;
-  const problem = `2/ The Problem (Human Condition):\n\n${card.problem}`;
-  const solution = `3/ The Solution (System Logic):\n\n${card.solution}`;
-  const workflow = `4/ Core Workflow:\n\n${card.coreWorkflow}`;
-  const stats = `5/ System Stats:\n\n✅ Works: ${card.whatWorks.join(', ')}\n\nReadiness: ${card.handoffReadiness}/10`;
-  return [intro, problem, solution, workflow, stats].join('\n\n---\n\n');
+  const truncate = (str: string, max: number) => str.length > max ? str.substring(0, max - 3) + '...' : str;
+  const intro = `🧵 New System Architecture: ${card.projectName}\n\n"${truncate(card.oneLiner, 180)}"\n\nApplying system design to the human condition. 1/n`;
+  const problem = `2/ The Problem:\n\n${truncate(card.problem, 240)}`;
+  const solution = `3/ The Solution:\n\n${truncate(card.solution, 240)}`;
+  const workflow = `4/ Logic Workflow:\n\n${truncate(card.coreWorkflow, 240)}`;
+  const footer = `5/ System Stats:\n\n✅ Works: ${card.whatWorks.slice(0, 3).join(', ')}\n\nReadiness: ${card.handoffReadiness}/10 #SystemDesign #Philosophy`;
+  return [intro, problem, solution, workflow, footer].join('\n\n---\n\n');
 }
 export function formatForReddit(card: SystemCard): string {
-  return `# [Project] ${card.projectName}
+  return `# [System Card] ${card.projectName}
 > ${card.oneLiner}
-## TL;DR
-Applying ${card.projectName} to the human condition of "${card.targetUser}".
-## The Architecture
+## Abstract
+Applying ${card.projectName} principles to solve the "${card.targetUser}" bottleneck.
+## Architecture
 **The Problem:** ${card.problem}
-**The System Solution:** ${card.solution}
-## Implementation
-**Workflow:**
+**The Solution:** ${card.solution}
+## Technical Implementation
+**Workflow Pattern:**
+\`\`\`
 ${card.coreWorkflow}
+\`\`\`
 **Build Order:**
 ${card.mvpBuildOrder}
 ## Strategy
 **Differentiation:** ${card.differentiation}
-**Sustainability:** ${card.monetization}
+**Monetization/Value:** ${card.monetization}
 ---
-*Readiness: ${card.handoffReadiness}/10*`;
+*Generated via Architect Paradox Dashboard | Readiness: ${card.handoffReadiness}/10*`;
 }
 export function formatForGeneric(card: SystemCard): string {
-  return `SYSTEM CARD: ${card.projectName}
-"${card.oneLiner}"
-Target: ${card.targetUser}
-Problem: ${card.problem}
-Solution: ${card.solution}
-Workflow: ${card.coreWorkflow}
-Readiness: ${card.handoffReadiness}/10`;
+  const version = new Date(card.updatedAt).toISOString().split('T')[0].replace(/-/g, '.');
+  return `SYSTEM CARD [v${version}]
+---------------------------
+PROJECT: ${card.projectName}
+TAGLINE: "${card.oneLiner}"
+TARGET: ${card.targetUser}
+PROBLEM: ${card.problem}
+SOLUTION: ${card.solution}
+WORKFLOW: ${card.coreWorkflow}
+READINESS: ${card.handoffReadiness}/10
+BUILD ORDER: ${card.mvpBuildOrder}
+DIFFERENTIATION: ${card.differentiation}
+(C) ARCHITECT PARADOX`;
 }
 export function transmit(card: SystemCard, venue: TransmitVenue): string {
   switch (venue) {
