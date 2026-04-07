@@ -71,7 +71,7 @@ export function EditorPage() {
       toast.success(isNew ? 'Architecture Initialized' : 'System State Updated');
       navigate('/');
     },
-    onError: (err: Error) => toast.error(`Contention Detected: ${err.message}`),
+    onError: (err: Error) => toast.error(`Save failed: ${err.message}`),
   });
   const deleteMutation = useMutation({
     mutationFn: () => api(`/api/cards/${id}`, { method: 'DELETE' }),
@@ -94,11 +94,14 @@ export function EditorPage() {
       [field]: (formData[field] || []).filter((_, i) => i !== index)
     });
   };
+
   const handleClear = () => {
     if (confirm('Reset editor to initial state?')) {
       reset(INITIAL_STATE);
     }
   };
+
+  const hasValidProjectName = !!((formData.projectName || '').trim());
   if (id && isCardLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 space-y-12">
@@ -152,7 +155,7 @@ export function EditorPage() {
             <Button variant="outline" size="sm" className="rounded-full" onClick={() => setPreviewOpen(true)} disabled={!formData.projectName}>
               <Diamond className="size-4 mr-2" /> Preview
             </Button>
-            <Button onClick={() => saveMutation.mutate(formData)} disabled={saveMutation.isPending || !formData.projectName} className="rounded-full px-6">
+            <Button onClick={() => saveMutation.mutate(formData)} disabled={saveMutation.isPending || !hasValidProjectName} className="rounded-full px-6">
               {saveMutation.isPending ? <Loader2 className="size-4 mr-2 animate-spin" /> : <Hexagon className="size-4 mr-2" />}
               {isNew ? 'Initialize' : 'Save'}
             </Button>
