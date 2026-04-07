@@ -86,8 +86,8 @@ export function HomePage() {
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={handleExportAll} disabled={cards.length === 0}>
                 <Download className="size-4" />
               </Button>
-              <div className="w-px h-4 bg-border mx-1" />
-              <Button onClick={() => navigate('/deck')} variant="outline" size="sm" className="rounded-full h-8 px-4 border-primary/20 hover:border-primary/50" disabled={cards.length === 0}>
+              <div className="w-px h-5 bg-border/60 mx-1" />
+              <Button onClick={() => navigate('/deck')} variant="outline" size="sm" title="Enter Zen Mode" className="group rounded-full h-8 px-4 border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 shadow-sm" disabled={cards.length === 0}>
                 <Play className="size-3 mr-2" /> Play Deck
               </Button>
               <Button onClick={() => navigate('/new')} size="sm" className="rounded-full h-8 px-4 shadow-sm hover:scale-105 active:scale-95 transition-all">
@@ -170,7 +170,7 @@ export function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-24 md:py-32 space-y-12 animate-in fade-in zoom-in-95 duration-700">
+                <div className="text-center py-24 md:py-32 lg:py-48 space-y-12 animate-in fade-in zoom-in-95 duration-700 max-w-4xl mx-auto">
                   <div className="space-y-4">
                     <h2 className="text-9xl md:text-[12rem] font-display font-black tracking-tighter text-foreground/[0.03] dark:text-foreground/[0.05] leading-none select-none pointer-events-none">
                       Cards 0
