@@ -35,7 +35,7 @@ export function ParadoxViewer({ card, direction, isZenMode = false }: ParadoxVie
   return (
     <div className={cn(
       "relative w-full max-w-2xl mx-auto flex items-center justify-center",
-      isZenMode ? "h-[650px] md:h-[600px]" : "h-[500px]"
+      isZenMode ? "min-h-[500px] max-h-[85vh] h-auto" : "h-[500px]"
     )}>
       <AnimatePresence initial={false} custom={direction} mode="wait">
         <motion.div
@@ -51,15 +51,15 @@ export function ParadoxViewer({ card, direction, isZenMode = false }: ParadoxVie
             scale: { duration: 0.3 },
             filter: { duration: 0.3 }
           }}
-          className="w-full absolute inset-x-0"
+          className="w-full absolute inset-x-0 overflow-visible"
         >
           <Card className={cn(
-            "border-none shadow-soft backdrop-blur-xl overflow-hidden border border-border/40 rounded-3xl transition-colors duration-500 mx-auto",
+            "shadow-soft backdrop-blur-xl overflow-hidden border border-border/40 rounded-3xl transition-colors duration-500 mx-auto",
             isZenMode ? "bg-card/95 shadow-2xl ring-1 ring-border/10" : "bg-card/90"
           )}>
             <CardHeader className={cn(
               "text-center space-y-4",
-              isZenMode ? "pt-10 md:pt-14 pb-4 md:pb-6" : "pt-8 pb-4"
+              isZenMode ? "pt-8 md:pt-14 pb-4" : "pt-8 pb-4"
             )}>
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[9px] md:text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground/60">
@@ -70,14 +70,14 @@ export function ParadoxViewer({ card, direction, isZenMode = false }: ParadoxVie
                 </Badge>
               </div>
               <CardTitle className={cn(
-                "font-display font-bold tracking-tighter text-foreground leading-tight px-4 text-pretty",
+                "font-display font-bold tracking-tighter text-foreground leading-tight px-4 text-balance",
                 isZenMode ? "text-3xl md:text-5xl lg:text-6xl" : "text-2xl md:text-4xl"
               )}>
                 {card.projectName}
               </CardTitle>
             </CardHeader>
             <CardContent className={cn(
-              "px-6 pb-12 md:pb-16 space-y-8 md:space-y-10",
+              "px-6 pb-10 md:pb-16 space-y-6 md:space-y-10",
               isZenMode ? "md:px-20" : "md:px-12"
             )}>
               <div className="space-y-3">
@@ -97,14 +97,14 @@ export function ParadoxViewer({ card, direction, isZenMode = false }: ParadoxVie
               <div className="space-y-3">
                 <p className="text-[9px] md:text-[10px] font-mono text-muted-foreground/50 uppercase tracking-widest text-center">The Human Paradox</p>
                 <p className={cn(
-                  "italic font-display text-foreground/80 leading-snug text-pretty text-center max-w-lg mx-auto",
+                  "italic font-display text-foreground/80 leading-snug text-balance text-center max-w-lg mx-auto",
                   isZenMode ? "text-xl md:text-2xl lg:text-3xl" : "text-lg md:text-xl"
                 )}>
                   "{card.problem}"
                 </p>
               </div>
               {card.oneLiner && (
-                <div className="pt-2 md:pt-4 text-center">
+                <div className="pt-2 text-center">
                   <p className="text-[10px] md:text-xs text-muted-foreground font-mono italic opacity-60 text-pretty max-w-md mx-auto">
                     // {card.oneLiner}
                   </p>
