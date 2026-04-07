@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { SystemCardEntity } from "./entities";
-import { ok, bad, notFound, isStr } from './core-utils';
+import { ok, bad, notFound } from './core-utils';
 import { SYSTEM_CARD_TEMPLATES } from "@shared/mock-data";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // CARDS
@@ -20,7 +20,9 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.post('/api/cards', async (c) => {
     const data = await c.req.json();
     if (!data.projectName) return bad(c, 'Project name is required');
+    // Merge input with initial state to ensure consistency
     const newCard = {
+      ...SystemCardEntity.initialState,
       ...data,
       id: crypto.randomUUID(),
       createdAt: Date.now()
@@ -32,7 +34,9 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const updates = await c.req.json();
     const card = new SystemCardEntity(c.env, id);
     if (!await card.exists()) return notFound(c, 'Card not found');
-    await card.patch(updates);
+    // Explicitly prevent id or createdAt mutation via patch
+    const { id: _, createdAt: __, ...safeUpdates } = updates;
+    await card.patch(safeUpdates);
     return ok(c, await card.getState());
   });
   app.delete('/api/cards/:id', async (c) => {
