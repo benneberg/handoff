@@ -1,138 +1,99 @@
-// Home page of the app.
-// Currently a demo placeholder "please wait" screen.
-// Replace this file with your actual app UI. Do not delete it to use some other file as homepage. Simply replace the entire contents of this file.
-
-import { useEffect, useMemo, useState } from 'react'
-import { Sparkles } from 'lucide-react'
-
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { HAS_TEMPLATE_DEMO, TemplateDemo } from '@/components/TemplateDemo'
-import { Button } from '@/components/ui/button'
-import { Toaster, toast } from '@/components/ui/sonner'
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000))
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
+import React, { useState, useCallback, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Shuffle, Hash } from 'lucide-react';
+import { ParadoxViewer } from '@/components/ParadoxViewer';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Button } from '@/components/ui/button';
+import { MOCK_PARADOX_DECK } from '@shared/mock-data';
+import { Toaster } from '@/components/ui/sonner';
 export function HomePage() {
-  const [coins, setCoins] = useState(0)
-  const [isRunning, setIsRunning] = useState(false)
-  const [startedAt, setStartedAt] = useState<number | null>(null)
-  const [elapsedMs, setElapsedMs] = useState(0)
-
+  const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
+  const nextCard = useCallback(() => {
+    setDirection(1);
+    setIndex((prev) => (prev + 1) % MOCK_PARADOX_DECK.length);
+  }, []);
+  const prevCard = useCallback(() => {
+    setDirection(-1);
+    setIndex((prev) => (prev - 1 + MOCK_PARADOX_DECK.length) % MOCK_PARADOX_DECK.length);
+  }, []);
+  const shuffleCard = () => {
+    const newIndex = Math.floor(Math.random() * MOCK_PARADOX_DECK.length);
+    setDirection(newIndex > index ? 1 : -1);
+    setIndex(newIndex);
+  };
   useEffect(() => {
-    if (!isRunning || startedAt === null) return
-
-    const t = setInterval(() => {
-      setElapsedMs(Date.now() - startedAt)
-    }, 250)
-
-    return () => clearInterval(t)
-  }, [isRunning, startedAt])
-
-  const formatted = useMemo(() => formatDuration(elapsedMs), [elapsedMs])
-
-  const onPleaseWait = () => {
-    setCoins((c) => c + 1)
-
-    if (!isRunning) {
-      // Resume from the current elapsed time
-      setStartedAt(Date.now() - elapsedMs)
-      setIsRunning(true)
-      toast.success('Building your app…', {
-        description: "Hang tight — we're setting everything up.",
-      })
-      return
-    }
-
-    setIsRunning(false)
-    toast.info('Still working…', {
-      description: 'You can come back in a moment.',
-    })
-  }
-
-  const onReset = () => {
-    setCoins(0)
-    setIsRunning(false)
-    setStartedAt(null)
-    setElapsedMs(0)
-    toast('Reset complete')
-  }
-
-  const onAddCoin = () => {
-    setCoins((c) => c + 1)
-    toast('Coin added')
-  }
-
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') nextCard();
+      if (e.key === 'ArrowLeft') prevCard();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nextCard, prevCard]);
+  const currentCard = MOCK_PARADOX_DECK[index];
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 overflow-hidden relative">
-      <ThemeToggle />
-      <div className="absolute inset-0 bg-gradient-rainbow opacity-10 dark:opacity-20 pointer-events-none" />
-
-      <div className="text-center space-y-8 relative z-10 animate-fade-in w-full">
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-primary floating">
-            <Sparkles className="w-8 h-8 text-white rotating" />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-balance leading-tight">
-            Creating your <span className="text-gradient">app</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto text-pretty">
-            Your application would be ready soon.
-          </p>
-        </div>
-
-        {HAS_TEMPLATE_DEMO ? (
-          <div className="max-w-5xl mx-auto text-left">
-            <TemplateDemo />
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-center gap-4">
-              <Button
-                size="lg"
-                onClick={onPleaseWait}
-                className="btn-gradient px-8 py-4 text-lg font-semibold hover:-translate-y-0.5 transition-all duration-200"
-                aria-live="polite"
-              >
-                Please Wait
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-              <div>
-                Time elapsed:{' '}
-                <span className="font-medium tabular-nums text-foreground">{formatted}</span>
-              </div>
-              <div>
-                Coins:{' '}
-                <span className="font-medium tabular-nums text-foreground">{coins}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={onReset}>
-                Reset
-              </Button>
-              <Button variant="outline" size="sm" onClick={onAddCoin}>
-                Add Coin
-              </Button>
-            </div>
-          </>
-        )}
+    <div className="min-h-screen bg-background transition-colors duration-500 overflow-hidden selection:bg-primary/10">
+      {/* Subtle Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-stone-200/20 dark:bg-stone-800/10 blur-[120px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] rounded-full bg-stone-300/20 dark:bg-stone-900/10 blur-[100px]" />
       </div>
-
-      <footer className="absolute bottom-8 text-center text-muted-foreground/80">
-        <p>Powered by Cloudflare</p>
-      </footer>
-
-      <Toaster richColors closeButton />
+      <ThemeToggle />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-screen flex flex-col">
+        <div className="py-8 md:py-10 flex-shrink-0 flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-xl font-display font-bold tracking-tight text-foreground">
+              The Architect Paradox
+            </h1>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest font-mono">
+              Systems Design for the Human Soul
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+            <Hash className="size-3" />
+            <span>{index + 1} / {MOCK_PARADOX_DECK.length}</span>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center py-4">
+          <ParadoxViewer card={currentCard} direction={direction} />
+        </div>
+        <div className="py-12 flex flex-col items-center gap-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={prevCard}
+              className="rounded-full hover:bg-accent transition-all duration-300"
+              aria-label="Previous Paradox"
+            >
+              <ChevronLeft className="size-6" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={shuffleCard}
+              className="px-6 rounded-full font-mono text-[10px] uppercase tracking-tighter border-muted-foreground/20 hover:border-foreground transition-colors"
+            >
+              <Shuffle className="size-3 mr-2" />
+              Randomize
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={nextCard}
+              className="rounded-full hover:bg-accent transition-all duration-300"
+              aria-label="Next Paradox"
+            >
+              <ChevronRight className="size-6" />
+            </Button>
+          </div>
+          <footer className="text-center">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 font-medium">
+              Use arrow keys to navigate
+            </p>
+          </footer>
+        </div>
+      </main>
+      <Toaster position="bottom-center" />
     </div>
-  )
+  );
 }
