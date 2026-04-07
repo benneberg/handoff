@@ -7,14 +7,30 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { useEditorHistory } from '@/hooks/use-editor-history';
 import { MarkdownPreviewModal } from '@/components/modals/MarkdownPreviewModal';
 import { TransmitModal } from '@/components/modals/TransmitModal';
 import type { SystemCard, CardTemplate } from '@shared/types';
+const INITIAL_STATE: Partial<SystemCard> = {
+  projectName: '',
+  oneLiner: '',
+  targetUser: '',
+  problem: '',
+  solution: '',
+  coreWorkflow: '',
+  mvpBuildOrder: '',
+  differentiation: '',
+  monetization: '',
+  nextExpansion: '',
+  whatWorks: [],
+  whatDoesntWork: [],
+  handoffReadiness: 5,
+};
 export function EditorPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -22,52 +38,24 @@ export function EditorPage() {
   const initializedRef = useRef(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [transmitOpen, setTransmitOpen] = useState(false);
-  const { state: formData, push: setFormData, undo, redo, reset, canUndo, canRedo } = useEditorHistory({
-    projectName: '',
-    oneLiner: '',
-    targetUser: '',
-    problem: '',
-    solution: '',
-    coreWorkflow: '',
-    mvpBuildOrder: '',
-    differentiation: '',
-    monetization: '',
-    nextExpansion: '',
-    whatWorks: [],
-    whatDoesntWork: [],
-    handoffReadiness: 5,
-  });
-  const { data: existingCard, isLoading: isCardLoading } = useQuery({
+  const { state: formData, push: setFormData, undo, redo, reset, canUndo, canRedo } = useEditorHistory(INITIAL_STATE);
+  const { data: existingCard, isLoading: isCardLoading, isError: isLoadError } = useQuery({
     queryKey: ['card', id],
     queryFn: () => api<SystemCard>(`/api/cards/${id}`),
     enabled: !!id,
+    retry: false,
   });
   useEffect(() => {
-    // Only initialize once to prevent reset-loops during typing
     if (initializedRef.current) return;
-    if (existingCard) {
+    if (!isNew && existingCard) {
       reset(existingCard);
       initializedRef.current = true;
     } else if (isNew) {
-      if (location.state?.template) {
-        const template = location.state.template as CardTemplate;
-        reset({
-          projectName: '',
-          oneLiner: '',
-          targetUser: '',
-          problem: '',
-          solution: '',
-          coreWorkflow: '',
-          mvpBuildOrder: '',
-          differentiation: '',
-          monetization: '',
-          nextExpansion: '',
-          whatWorks: [],
-          whatDoesntWork: [],
-          handoffReadiness: 5,
-          ...template.preset 
-        });
-      }
+      const template = location.state?.template as CardTemplate | undefined;
+      reset({
+        ...INITIAL_STATE,
+        ...(template?.preset || {})
+      });
       initializedRef.current = true;
     }
   }, [existingCard, isNew, location.state, reset]);
@@ -108,24 +96,32 @@ export function EditorPage() {
   };
   const handleClear = () => {
     if (confirm('Reset editor to initial state?')) {
-      reset({
-        projectName: '',
-        oneLiner: '',
-        targetUser: '',
-        problem: '',
-        solution: '',
-        coreWorkflow: '',
-        mvpBuildOrder: '',
-        differentiation: '',
-        monetization: '',
-        nextExpansion: '',
-        whatWorks: [],
-        whatDoesntWork: [],
-        handoffReadiness: 5,
-      });
+      reset(INITIAL_STATE);
     }
   };
-  if (id && isCardLoading) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
+  if (id && isCardLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 space-y-12">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-32 rounded-full" />
+          <Skeleton className="h-10 w-48 rounded-full" />
+        </div>
+        <div className="max-w-4xl mx-auto space-y-12">
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+  if (id && isLoadError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen space-y-4">
+        <h2 className="text-2xl font-bold">Failed to load system card</h2>
+        <Button onClick={() => navigate('/')}>Return Home</Button>
+      </div>
+    );
+  }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-background selection:bg-primary/10">
       <div className="py-8 md:py-10 lg:py-12 space-y-12">
@@ -255,15 +251,15 @@ export function EditorPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-4">
                   <Label className="text-xs uppercase font-mono text-green-600 dark:text-green-400">✓ What Works Well</Label>
-                  <Input 
-                    className="bg-secondary/30 border-none" 
-                    placeholder="Add operational success..." 
+                  <Input
+                    className="bg-secondary/30 border-none"
+                    placeholder="Add operational success..."
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
                         handleListAdd('whatWorks', e.currentTarget.value);
                         e.currentTarget.value = '';
                       }
-                    }} 
+                    }}
                   />
                   <div className="flex flex-wrap gap-2">
                     {(formData.whatWorks || []).map((item, i) => (
@@ -277,15 +273,15 @@ export function EditorPage() {
                 </div>
                 <div className="space-y-4">
                   <Label className="text-xs uppercase font-mono text-red-600 dark:text-red-400">✗ System Failures</Label>
-                  <Input 
-                    className="bg-secondary/30 border-none" 
-                    placeholder="Add known bugs/limitations..." 
+                  <Input
+                    className="bg-secondary/30 border-none"
+                    placeholder="Add known bugs/limitations..."
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
                         handleListAdd('whatDoesntWork', e.currentTarget.value);
                         e.currentTarget.value = '';
                       }
-                    }} 
+                    }}
                   />
                   <div className="flex flex-wrap gap-2">
                     {(formData.whatDoesntWork || []).map((item, i) => (
@@ -318,16 +314,16 @@ export function EditorPage() {
           )}
         </main>
       </div>
-      <MarkdownPreviewModal 
-        card={formData as SystemCard} 
-        open={previewOpen} 
-        onOpenChange={setPreviewOpen} 
+      <MarkdownPreviewModal
+        card={formData as SystemCard}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
       />
       {formData && !isNew && (
-        <TransmitModal 
-          card={formData as SystemCard} 
-          open={transmitOpen} 
-          onOpenChange={setTransmitOpen} 
+        <TransmitModal
+          card={formData as SystemCard}
+          open={transmitOpen}
+          onOpenChange={setTransmitOpen}
         />
       )}
     </div>
