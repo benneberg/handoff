@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Hexagon, Diamond, Trash2, X, Loader2, Check, Send, RotateCcw, RotateCw, Eraser } from 'lucide-react';
@@ -7,21 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
-import { generateCardMarkdown } from '@/lib/markdown-utils';
 import { useEditorHistory } from '@/hooks/use-editor-history';
 import { MarkdownPreviewModal } from '@/components/modals/MarkdownPreviewModal';
 import { TransmitModal } from '@/components/modals/TransmitModal';
 import type { SystemCard, CardTemplate } from '@shared/types';
-import { cn } from '@/lib/utils';
 export function EditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
   const isNew = !id;
+  const initializedRef = useRef(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [transmitOpen, setTransmitOpen] = useState(false);
   const { state: formData, push: setFormData, undo, redo, reset, canUndo, canRedo } = useEditorHistory({
@@ -45,13 +43,34 @@ export function EditorPage() {
     enabled: !!id,
   });
   useEffect(() => {
+    // Only initialize once to prevent reset-loops during typing
+    if (initializedRef.current) return;
     if (existingCard) {
       reset(existingCard);
-    } else if (isNew && location.state?.template) {
-      const template = location.state.template as CardTemplate;
-      reset({ ...formData, ...template.preset });
+      initializedRef.current = true;
+    } else if (isNew) {
+      if (location.state?.template) {
+        const template = location.state.template as CardTemplate;
+        reset({
+          projectName: '',
+          oneLiner: '',
+          targetUser: '',
+          problem: '',
+          solution: '',
+          coreWorkflow: '',
+          mvpBuildOrder: '',
+          differentiation: '',
+          monetization: '',
+          nextExpansion: '',
+          whatWorks: [],
+          whatDoesntWork: [],
+          handoffReadiness: 5,
+          ...template.preset 
+        });
+      }
+      initializedRef.current = true;
     }
-  }, [existingCard, isNew, location.state]);
+  }, [existingCard, isNew, location.state, reset]);
   const saveMutation = useMutation({
     mutationFn: (data: Partial<SystemCard>) => {
       const payload = { ...data, updatedAt: Date.now() };
@@ -108,7 +127,7 @@ export function EditorPage() {
   };
   if (id && isCardLoading) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin" /></div>;
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 bg-background selection:bg-primary/10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-background selection:bg-primary/10">
       <div className="py-8 md:py-10 lg:py-12 space-y-12">
         <header className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -143,10 +162,10 @@ export function EditorPage() {
             </Button>
           </div>
         </header>
-        <main className="space-y-20 pb-20">
+        <main className="max-w-4xl mx-auto space-y-20 pb-20">
           <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold tracking-tight">Concept Definition</h2>
+              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground">Concept Definition</h2>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Identity & Proposition</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -155,7 +174,7 @@ export function EditorPage() {
                 <Input
                   className="bg-secondary/30 border-none h-12 text-lg focus-visible:ring-primary"
                   placeholder="e.g. Graceful Degradation"
-                  value={formData.projectName}
+                  value={formData.projectName || ''}
                   onChange={e => handleChange('projectName', e.target.value)}
                 />
               </div>
@@ -164,7 +183,7 @@ export function EditorPage() {
                 <Input
                   className="bg-secondary/30 border-none h-12 text-lg focus-visible:ring-primary"
                   placeholder="e.g. Overachievers"
-                  value={formData.targetUser}
+                  value={formData.targetUser || ''}
                   onChange={e => handleChange('targetUser', e.target.value)}
                 />
               </div>
@@ -173,7 +192,7 @@ export function EditorPage() {
                 <Input
                   className="bg-secondary/30 border-none h-12 italic focus-visible:ring-primary"
                   placeholder="The core logic of this system in one sentence..."
-                  value={formData.oneLiner}
+                  value={formData.oneLiner || ''}
                   onChange={e => handleChange('oneLiner', e.target.value)}
                 />
               </div>
@@ -181,7 +200,7 @@ export function EditorPage() {
           </section>
           <section className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold tracking-tight">Logic Engine</h2>
+              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground">Logic Engine</h2>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Architecture & Flow</p>
             </div>
             <div className="space-y-8">
@@ -190,7 +209,7 @@ export function EditorPage() {
                 <Textarea
                   className="min-h-[120px] bg-secondary/30 border-none text-lg resize-none"
                   placeholder="Describe the human struggle..."
-                  value={formData.problem}
+                  value={formData.problem || ''}
                   onChange={e => handleChange('problem', e.target.value)}
                 />
               </div>
@@ -199,7 +218,7 @@ export function EditorPage() {
                 <Textarea
                   className="min-h-[120px] bg-secondary/30 border-none text-lg resize-none"
                   placeholder="How does logic solve the problem?"
-                  value={formData.solution}
+                  value={formData.solution || ''}
                   onChange={e => handleChange('solution', e.target.value)}
                 />
               </div>
@@ -208,7 +227,7 @@ export function EditorPage() {
                 <Textarea
                   className="bg-secondary/30 border-none font-mono text-sm min-h-[100px]"
                   placeholder="Input -> Reasoning -> Action -> Loop"
-                  value={formData.coreWorkflow}
+                  value={formData.coreWorkflow || ''}
                   onChange={e => handleChange('coreWorkflow', e.target.value)}
                 />
               </div>
@@ -216,33 +235,7 @@ export function EditorPage() {
           </section>
           <section className="space-y-8">
             <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold tracking-tight">Strategic Context</h2>
-              <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Growth & Sustainability</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <Label className="text-xs uppercase font-mono text-muted-foreground">Differentiation</Label>
-                <Textarea
-                  className="bg-secondary/30 border-none h-32 resize-none"
-                  placeholder="What makes this logic unique?"
-                  value={formData.differentiation}
-                  onChange={e => handleChange('differentiation', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase font-mono text-muted-foreground">Value Capture</Label>
-                <Textarea
-                  className="bg-secondary/30 border-none h-32 resize-none"
-                  placeholder="How is this system sustained?"
-                  value={formData.monetization}
-                  onChange={e => handleChange('monetization', e.target.value)}
-                />
-              </div>
-            </div>
-          </section>
-          <section className="space-y-8">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-display font-bold tracking-tight">Execution State</h2>
+              <h2 className="text-2xl font-display font-bold tracking-tight text-foreground">Execution State</h2>
               <p className="text-sm text-muted-foreground font-mono uppercase tracking-tighter">Readiness & Validation</p>
             </div>
             <div className="space-y-12">
@@ -273,7 +266,7 @@ export function EditorPage() {
                     }} 
                   />
                   <div className="flex flex-wrap gap-2">
-                    {formData.whatWorks?.map((item, i) => (
+                    {(formData.whatWorks || []).map((item, i) => (
                       <div key={i} className="flex items-center gap-2 bg-green-500/10 text-green-700 dark:text-green-300 px-3 py-1.5 rounded-full text-xs font-medium border border-green-500/20">
                         <Check className="size-3" />
                         {item}
@@ -295,7 +288,7 @@ export function EditorPage() {
                     }} 
                   />
                   <div className="flex flex-wrap gap-2">
-                    {formData.whatDoesntWork?.map((item, i) => (
+                    {(formData.whatDoesntWork || []).map((item, i) => (
                       <div key={i} className="flex items-center gap-2 bg-red-500/10 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-full text-xs font-medium border border-red-500/20">
                         <X className="size-3" />
                         {item}
