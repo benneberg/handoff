@@ -25,7 +25,8 @@ export class SystemCardEntity extends IndexedEntity<SystemCard> {
     whatWorks: [],
     whatDoesntWork: [],
     handoffReadiness: 1,
-    createdAt: 0
+    createdAt: 0,
+    updatedAt: 0
   };
   static seedData = MOCK_SYSTEM_CARDS;
 }

@@ -22,7 +22,8 @@ export const MOCK_SYSTEM_CARDS: SystemCard[] = [
     whatWorks: ['Reduces immediate stress', 'Prevents total collapse'],
     whatDoesntWork: ['Social obligations', 'Deep creative focus'],
     handoffReadiness: 8,
-    createdAt: Date.now()
+    createdAt: 1712457716000,
+    updatedAt: 1712457716000
   },
   {
     id: 'sc2',
@@ -39,7 +40,8 @@ export const MOCK_SYSTEM_CARDS: SystemCard[] = [
     whatWorks: ['Reduces guilt', 'Encourages long-term change'],
     whatDoesntWork: ['Instant gratification', 'Strict moral accounting'],
     handoffReadiness: 6,
-    createdAt: Date.now()
+    createdAt: 1712457716000,
+    updatedAt: 1712457716000
   }
 ];
 export const SYSTEM_CARD_TEMPLATES: CardTemplate[] = [
