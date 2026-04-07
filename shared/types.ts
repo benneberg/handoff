@@ -7,6 +7,29 @@ export interface User {
   id: string;
   name: string;
 }
+export interface SystemCard {
+  id: string;
+  projectName: string;
+  oneLiner: string;
+  targetUser: string;
+  problem: string;
+  solution: string;
+  coreWorkflow: string;
+  mvpBuildOrder: string;
+  differentiation: string;
+  monetization: string;
+  nextExpansion: string;
+  whatWorks: string[];
+  whatDoesntWork: string[];
+  handoffReadiness: number; // 1-10
+  createdAt: number;
+}
+export interface CardTemplate {
+  id: string;
+  name: string;
+  description: string;
+  preset: Partial<SystemCard>;
+}
 export interface Chat {
   id: string;
   title: string;
@@ -17,11 +40,4 @@ export interface ChatMessage {
   userId: string;
   text: string;
   ts: number;
-}
-export interface ParadoxCard {
-  id: string;
-  title: string;
-  systemConcept: string;
-  humanContext: string;
-  quote?: string;
 }
