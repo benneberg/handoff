@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, RefreshCw, Info, Binary, Download, Shuffle, ChevronRight, FileText } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,10 @@ import type { SystemCard, CardTemplate } from '@shared/types';
 import { cn } from '@/lib/utils';
 export function HomePage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('my-cards');
   const [shuffledIds, setShuffledIds] = useState<string[] | null>(null);
   const { data: cardsData, isLoading, refetch } = useQuery({
     queryKey: ['cards'],
@@ -28,7 +28,7 @@ export function HomePage() {
     queryFn: () => api<CardTemplate[]>('/api/templates'),
   });
   const cards = cardsData?.items ?? [];
-  const displayCards = shuffledIds 
+  const displayCards = shuffledIds
     ? [...cards].sort((a, b) => shuffledIds.indexOf(a.id) - shuffledIds.indexOf(b.id))
     : cards;
   const filteredCards = displayCards.filter(c =>
@@ -80,7 +80,7 @@ export function HomePage() {
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setGuideOpen(true)}>
                 <Info className="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setShowSearch(!showSearch)}>
+              <Button variant="ghost" size="icon" className={cn("rounded-full h-8 w-8", showSearch && "bg-accent")} onClick={() => setShowSearch(!showSearch)}>
                 <Search className="size-4" />
               </Button>
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={handleExportAll}>
@@ -103,7 +103,7 @@ export function HomePage() {
               />
             </div>
           )}
-          <Tabs defaultValue="my-cards" className="space-y-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
             <div className="flex items-center justify-between border-b">
               <TabsList className="bg-transparent h-auto p-0 space-x-8">
                 <TabsTrigger value="my-cards" className="px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent shadow-none font-bold">
@@ -160,15 +160,24 @@ export function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-20 space-y-4">
-                  <div className="inline-flex items-center justify-center size-12 rounded-full bg-secondary text-muted-foreground">
-                    <FileText className="size-6" />
+                <div className="text-center py-32 space-y-10 animate-in fade-in duration-700">
+                  <div className="space-y-4">
+                    <h2 className="text-8xl md:text-9xl font-display font-black tracking-tighter text-foreground/5 leading-none select-none">
+                      Cards 0
+                    </h2>
+                    <div 
+                      className="flex items-center justify-center gap-2 group cursor-pointer"
+                      onClick={() => setActiveTab('templates')}
+                    >
+                      <span className="text-xl md:text-2xl font-display font-medium text-muted-foreground hover:text-foreground transition-colors underline decoration-border/40 underline-offset-8">
+                        New Templates
+                      </span>
+                      <Search className="size-5 text-muted-foreground group-hover:text-primary animate-pulse transition-colors" />
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-lg font-medium">No system cards found</p>
-                    <p className="text-sm text-muted-foreground">Start refactoring your life logic.</p>
-                  </div>
-                  <Button onClick={() => navigate('/new')} className="rounded-full">Create Your First Card</Button>
+                  <Button onClick={() => navigate('/new')} variant="outline" className="rounded-full px-8 hover:bg-primary hover:text-primary-foreground transition-all">
+                    Initialize System
+                  </Button>
                 </div>
               )}
             </TabsContent>
